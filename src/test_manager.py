@@ -5,12 +5,8 @@ df = pd.read_csv("../data/irae_data_cleaned.csv")
 m = Manager(df)
 
 questions = [
-    "How many patients had colitis?",
-    "Plot number of patients per tumor type.",
-    "Females",
-    "All patients",
-    "Show me a histogram of age distribution.",
-    "What is the average age of patients with pneumonitis?"
+    "Give me all lung cancer patients with more than two iraes.",
+    "How many patients had more than two iraes?"
 ]
 
 for q in questions:

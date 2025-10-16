@@ -25,8 +25,11 @@ class Manager:
             result = self.query_agent.handle(question, self.df_summary)
         elif qtype == "plot":
             result = self.plot_agent.handle(question, self.df_summary)
+
         else:
-            result = {"type": "text", "code": None, "data": "Sorry, I couldn’t classify that question."}
+            result = {"type": "text",
+                      "code": None,
+                      "data": "Sorry, I couldn’t classify that question."}
         
         return result
     

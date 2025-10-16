@@ -29,6 +29,11 @@ def qwen_plotter_llm():
 def summarize_dataframe(df, max_rows=10):
     preview = {}
     hints = []
+    dtypes = df.dtypes.astype(str).to_dict()
+
+    # Build a formatted string showing each column and its dtype
+    columns_with_types = ", ".join([f"{col} ({dtypes[col]})" for col in df.columns])
+
 
     for col in df.columns:
         non_null_values = df[col].dropna().unique()[:max_rows]
@@ -63,7 +68,7 @@ def summarize_dataframe(df, max_rows=10):
         hint_text = "No special structural notes detected."
     
     info = {
-        "columns": list(df.columns),
+        "columns": columns_with_types,
         "num_rows": len(df),
         "num_columns": len(df.columns),
     }
@@ -74,14 +79,14 @@ def summarize_dataframe(df, max_rows=10):
     summary = f"""
 DataFrame Summary:
 Rows: {info['num_rows']}, Columns: {info['num_columns']}
-Columns: {', '.join(info['columns'])}
+Columns: {info['columns']}
 Preview (first {max_rows} unique non-null values per column):
 {df_preview.to_markdown(index=False)}
 
 Schema notes:
 {hint_text}
 """
-    return summary  
+    return summary
 
 
 # Function to clean up code exported from LLM 
@@ -97,3 +102,9 @@ def clean_code(code):
     
     return code
 
+
+if __name__ == "__main__":
+    df = pd.read_csv("../data/irae_data_cleaned.csv")
+    print(summarize_dataframe(df, max_rows=5))
+    
+  

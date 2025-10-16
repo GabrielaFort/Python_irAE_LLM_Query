@@ -5,8 +5,8 @@ df = pd.read_csv("../data/irae_data_cleaned.csv")
 m = Manager(df)
 
 questions = [
-    "Give me all lung cancer patients with more than two iraes.",
-    "How many patients had more than two iraes?"
+    "All patients",
+    "How many patients in dataset?"
 ]
 
 for q in questions:

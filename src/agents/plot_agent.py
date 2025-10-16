@@ -45,9 +45,6 @@ class PlotAgent:
             # Execute the LLM-suggested seaborn plot command
             exec(code, {}, local_vars)
 
-            # Just for troubleshooting for now, view plot 
-            plt.show()
-
             # Save plot to a memory buffer
             buf = io.BytesIO()
             plt.savefig(buf, format="png", bbox_inches="tight", dpi=150)

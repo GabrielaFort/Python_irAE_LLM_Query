@@ -41,14 +41,18 @@ class QueryAgent:
             # Handle potential other result types 
             elif isinstance(result, (int, float, np.number, np.generic)):
                 display_data = str(result)
+                type_str = "number"
             elif isinstance(result, pd.DataFrame):
                 display_data = result
+                type_str = "dataframe"
             elif isinstance(result, pd.Series):
                 display_data = result.to_frame()
+                type_str = "dataframe"
             else:
-                display_data = str(result)    
+                display_data = str(result)
+                type_str = "text"    
                 
-            return {"type": "query",
+            return {"type": type_str,
                     "code": code,
                     "data": display_data}
             

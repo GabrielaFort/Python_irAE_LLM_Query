@@ -25,6 +25,11 @@ class QueryAgent:
         code = self.llm_client.generate(prompt)
         code = clean_code(code)
 
+        return code
+    
+    def execute_code(self, code):
+
+         # Safe execution of LLM-suggested query code
         try:
             local_vars = {"df": self.df, "pd": pd, "np": np}
             # execute the generated code (it should assign the output to variable `result`)
@@ -40,13 +45,14 @@ class QueryAgent:
             
             # Handle potential other result types 
             elif isinstance(result, (int, float, np.number, np.generic)):
-                display_data = str(result)
+                display_data = float(result)
                 type_str = "number"
             elif isinstance(result, pd.DataFrame):
-                display_data = result
+                display_data = result.replace("", pd.NA)
                 type_str = "dataframe"
             elif isinstance(result, pd.Series):
                 display_data = result.to_frame()
+                display_data = display_data.replace("", pd.NA)
                 type_str = "dataframe"
             else:
                 display_data = str(result)

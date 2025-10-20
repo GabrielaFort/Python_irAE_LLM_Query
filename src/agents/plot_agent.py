@@ -4,6 +4,7 @@ import base64
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd 
+import numpy as np
 import traceback
 from utils import clean_code
 
@@ -37,16 +38,23 @@ class PlotAgent:
         code = self.llm_client.generate(prompt).strip()
         code = clean_code(code)
 
+        return code
+    
+    def execute_code(self, code):
+
         # Safe execution of LLM-suggested plotting code
         try:
             fig, ax = plt.subplots(figsize=(6, 4))
-            local_vars = {"df": self.df, "sns": sns, "plt": plt, "ax": ax}
+            local_vars = {"df": self.df, "sns": sns, "plt": plt, "ax": ax, "pd": pd, "np": np}
 
             # Execute the LLM-suggested seaborn plot command
             exec(code, {}, local_vars)
 
             # Save plot to a memory buffer
             buf = io.BytesIO()
+            plt.xticks(rotation=45, fontsize=8, ha='right')
+            plt.yticks(fontsize=8)
+            plt.tight_layout()
             plt.savefig(buf, format="png", bbox_inches="tight", dpi=150)
             plt.close(fig)
             buf.seek(0)

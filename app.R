@@ -74,7 +74,7 @@ server <- function(input, output, session) {
     rdata <- tryCatch(py_to_r(res$data), error = function(e) NULL)
     if (is.data.frame(rdata)) {
       rdata[rdata == ""] <- NA
-      head(rdata, 15)
+      head(rdata, 25)
       } else {
         NULL
       }

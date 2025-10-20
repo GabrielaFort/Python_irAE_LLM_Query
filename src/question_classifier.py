@@ -8,7 +8,7 @@ class QuestionClassifier:
 
     def classify(self, question):
         plot_keywords = ["plot", "graph", "chart", "visualize", "histogram", "scatter", "bar", "line", "figure", "volcano","heatmap"]
-        query_keywords = ["how many", "count", "number of", "what is the total", "total number of", "average", "median", "mean","list"]
+        query_keywords = ["how many", "count", "number of", "what is the total", "total number of", "average", "median", "mean","list","show","display","find"]
         question_lower = question.lower()
 
         # Keyword-based detection

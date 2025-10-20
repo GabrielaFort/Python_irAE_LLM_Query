@@ -5,7 +5,7 @@ import numpy as np
 
 # Instantiate LLM clients with preset configurations
 def llama3_llm():
-    myllm = LLMClient(model="meta-llama-3-8b-instruct",
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
                 temperature=0)
     return myllm
@@ -19,7 +19,7 @@ def qwen_query_llm():
 def qwen_plotter_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
-                temperature=0.4)
+                temperature=0.5)
     return myllm
 
 
@@ -36,7 +36,7 @@ def summarize_dataframe(df, max_rows=10):
 
 
     for col in df.columns:
-        non_null_values = df[col].dropna().unique()[:max_rows]
+        non_null_values = df[col].dropna().astype(str).unique()[:max_rows]
         preview[col] = list(non_null_values)
 
     # Identify whether any columns contain comma-separated entries suggesting multiple values per row

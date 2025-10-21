@@ -4,23 +4,35 @@ import pandas as pd
 import numpy as np
 
 # Instantiate LLM clients with preset configurations
-def llama3_llm():
+def question_classifier_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
                 temperature=0)
     return myllm
 
-def qwen_query_llm():
+def query_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
                 temperature=0)
     return myllm
 
-def qwen_plotter_llm():
+def plotter_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
                 temperature=0.5)
     return myllm
+
+def stats_llm():
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://localhost:1234",
+                temperature=0)
+    return myllm  
+
+def error_checker_llm():
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://localhost:1234",
+                temperature=0)
+    return myllm  
 
 
 # This function will take a dataframe as input and return a summary of the dataframe
@@ -104,7 +116,9 @@ def clean_code(code):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("../data/irae_data_cleaned.csv")
+    # Simple test of summarize_dataframe function
+    df = pd.read_csv("../data/data_david_new.csv", sep="$")
+    #df = pd.read_csv("../data/irae_data_cleaned.csv")
     print(summarize_dataframe(df, max_rows=5))
     
   

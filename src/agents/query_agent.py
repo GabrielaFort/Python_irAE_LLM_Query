@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import traceback
-from utils import clean_code
+from src.utils import clean_code
 
 class QueryAgent:
     def __init__(self, df, llm_client):
@@ -14,6 +14,7 @@ class QueryAgent:
         You are a python data analysis assistant. Given the following dataframe summary, 
         generate python code using pandas to answer the user's question.
         Use the dataframe variable name 'df'. Assign the answer to a variable 'result'.
+        If requested query is not possible given table schema, respond with a polite note saying so.
         Do not include any explanations or markdown, only return the executable code.
 
         {df_summary}
@@ -63,7 +64,7 @@ class QueryAgent:
                     "data": display_data}
             
         except Exception as e:
-            
+
             err = traceback.format_exc()
 
             return {"type": "error",

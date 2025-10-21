@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import traceback
-from utils import clean_code
+from src.utils import clean_code
 
 class StatsAgent:
     """
     Handles statistical analysis requests. 
     Uses LLM to suggest statistical tests in python code based on dataset sumary and user question.
+    If requested task is not possible given table schema, respond with a polite note saying so.
     Returns a tabular or numeric result.
     """
 

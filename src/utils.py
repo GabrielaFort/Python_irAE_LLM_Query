@@ -1,5 +1,5 @@
 # Helpful functions
-from llm_client import LLMClient
+from src.llm_client import LLMClient
 import pandas as pd 
 import numpy as np
 

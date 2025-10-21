@@ -1,5 +1,5 @@
 # Class for agent that fixes code that raised an error
-from utils import clean_code
+from src.utils import clean_code
 
 class ErrorAgent:
     def __init__ (self, llm_client):

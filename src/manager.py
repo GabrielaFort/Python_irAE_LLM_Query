@@ -1,9 +1,9 @@
 # This class will manage different agents and route questions accordingly
 # It uses the QuestionClassifier to determine the type of question
 
-from question_classifier import QuestionClassifier
-from utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, summarize_dataframe
-from agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent
+from src.question_classifier import QuestionClassifier
+from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, summarize_dataframe
+from src.agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent
 import traceback
 
 class Manager:
@@ -28,6 +28,8 @@ class Manager:
             agent = self.query_agent
         elif qtype == "plot":
             agent = self.plot_agent
+        elif qtype == "stats":
+            agent = self.stats_agent
         else:
             return({"type": "text",
                       "code": None,
@@ -53,8 +55,7 @@ class Manager:
                     retry_result["data"] = (
                         "Automatic correction failed:\n\n"
                         + retry_result["data"]
-                        + "\n\n"
-                        + "(You can review the fixed code above.)"
+                        + "\n"
                     )
 
                 return retry_result

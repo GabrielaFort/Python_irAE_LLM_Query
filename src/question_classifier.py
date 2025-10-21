@@ -8,12 +8,15 @@ class QuestionClassifier:
 
     def classify(self, question):
         plot_keywords = ["plot", "graph", "chart", "visualize", "histogram", "scatter", "bar", "line", "figure", "volcano","heatmap"]
-        query_keywords = ["how many", "count", "number of", "what is the total", "total number of", "average", "median", "mean","list","show","display","find"]
+        stat_keywords = ["statistical", "correlation", "regression", "significant", "p-value", "anova", "t-test", "chi-square", "average","median","mean"]
+        query_keywords = ["how many", "count", "number of", "what is the total", "total number of", "list","show","display","find"]
         question_lower = question.lower()
 
         # Keyword-based detection
         if any(word in question_lower for word in plot_keywords):
             return "plot"
+        elif any(word in question_lower for word in stat_keywords):
+            return "stats"
         elif any(word in question_lower for word in query_keywords):
             return "query"
 
@@ -21,11 +24,11 @@ class QuestionClassifier:
             # Fallback to LLM classification
             prompt = f"""
             Classify the task type of this question: "{question}"
-            Choose one of: 'query' or 'plot'. Return only the category name.
+            Choose one of: 'query', 'stats', or 'plot'. Return only the category name.
             """
             
             classification = self.llm_client.generate(prompt).strip().lower()
-            if classification in ["query", "plot"]:
+            if classification in ["query", "plot", "stats"]:
                 return classification
 
             # Default to 'query' if unsure

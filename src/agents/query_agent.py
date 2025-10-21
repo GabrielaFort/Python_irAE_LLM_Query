@@ -63,7 +63,10 @@ class QueryAgent:
                     "data": display_data}
             
         except Exception as e:
+            
             err = traceback.format_exc()
+
             return {"type": "error",
                     "code": code,
-                    "data": f"Error executing query: {e}\n\n{err}"}
+                    "data": f"Error executing query: {e}\n\n{err}"
+                    }

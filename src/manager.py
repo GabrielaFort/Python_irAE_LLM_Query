@@ -2,8 +2,8 @@
 # It uses the QuestionClassifier to determine the type of question
 
 from question_classifier import QuestionClassifier
-from utils import llama3_llm, qwen_plotter_llm, qwen_query_llm, summarize_dataframe
-from agents import QueryAgent, PlotAgent, ErrorAgent
+from utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, summarize_dataframe
+from agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent
 import traceback
 
 class Manager:
@@ -11,10 +11,11 @@ class Manager:
         self.df = df
 
         # Instantiate LLM clients for classifier and agents
-        self.classifier = QuestionClassifier(llama3_llm())
-        self.query_agent = QueryAgent(df,qwen_query_llm())
-        self.plot_agent = PlotAgent(df,qwen_plotter_llm())
-        self.error_agent = ErrorAgent(qwen_query_llm())
+        self.classifier = QuestionClassifier(question_classifier_llm())
+        self.query_agent = QueryAgent(df,query_llm())
+        self.plot_agent = PlotAgent(df,plotter_llm())
+        self.stats_agent = StatsAgent(df,stats_llm())
+        self.error_agent = ErrorAgent(error_checker_llm())
 
         # Summarize the dataframe - will need every time we instantiate this class
         self.df_summary = summarize_dataframe(df)

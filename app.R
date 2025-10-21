@@ -9,14 +9,17 @@ library(shiny)
 # Set working directory to github repo with app.R script
 setwd("~/Documents/Tan_Lab/Projects/Python_irAE_LLM_Query/")
 
-# Ensure Python environment
+# Use correct Python conda environment
 use_condaenv("irae_agent", required = TRUE)
 
 # Import Python manager
 manager_module <- import_from_path("manager", path = "src")
 
 # Read cleaned irae table into memory 
-df <- r_to_py(read.csv("data/irae_data_cleaned.csv", stringsAsFactors = FALSE))
+#df <- r_to_py(read.csv("data/irae_data_cleaned.csv", stringsAsFactors = FALSE))
+
+# Read david cleaned irae table into memory as a pandas df
+df <- r_to_py(read.delim("data/data_david_new.csv", sep = "$", stringsAsFactors = FALSE))
 
 # Instantiate manager class
 m <- manager_module$Manager(df)
@@ -27,7 +30,6 @@ m <- manager_module$Manager(df)
 
 ui <- fluidPage(
   titlePanel("irAE Dataset LLM Assistant"),
-  
   sidebarLayout(
     sidebarPanel(
       textInput("question", "Ask a question:", ""),

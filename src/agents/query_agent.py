@@ -14,7 +14,7 @@ class QueryAgent:
         You are a python data analysis assistant. Given the following dataframe summary, 
         generate python code using pandas to answer the user's question.
         Use the dataframe variable name 'df'. Assign the answer to a variable 'result'.
-        If requested query is not possible given table schema, respond with a polite note saying so.
+        CRITICAL: If requested query is not possible given table schema, respond with a polite note saying so.
         Do not include any explanations or markdown, only return the executable code.
 
         {df_summary}

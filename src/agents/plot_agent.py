@@ -10,7 +10,7 @@ class PlotAgent:
     """
     Handles visualization requests.
     Uses LLM to suggest a seaborn plot based on dataset summary and user query.
-    If requested plot/data is not possible given table schema, respond with a polite note saying so.
+    CRITICAL: If requested plot/data is not possible given table schema, respond with a polite note saying so.
     Returns a matplotlib fig object to display in streamlit frontend.
     """
     def __init__(self, df, llm_client):

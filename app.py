@@ -54,6 +54,8 @@ def load_data():
 
 
 # TRY also including option to upload data
+# Just testing this, delete later
+# But proof of concept that my setup could be used for any table
 st.sidebar.header("Data Options")
 
 uploaded_file = st.sidebar.file_uploader(

@@ -11,9 +11,63 @@ st.set_page_config(
 # Load dataset from David
 @st.cache_data
 def load_data():
-    return pd.read_csv("data/data_david_new.csv", sep = "$")
+    messy_data = pd.read_csv("data/data_david_new.csv", sep = "$")
 
-df = load_data()
+    # Replace any empty strings with NaN
+    messy_data.replace("", pd.NA, inplace=True)
+
+    # Change all "_" to "," so that rows with multiple entries are comma-separated always
+    string_cols = messy_data.select_dtypes(include='object').columns
+    for col in string_cols:
+        messy_data[col] = messy_data[col].str.replace("_", ",", regex=False)
+        messy_data[col] = messy_data[col].str.title() # Also capitalize first letter of each word
+
+    # Standardize any columns containing comma-separated values
+    for col in messy_data.columns:
+
+    # Identify whether any columns contain comma-separated entries suggesting multiple values per row
+        if messy_data[col].astype(str).str.contains(",").any():
+            messy_data[col] = messy_data[col].str.replace(r"\s*,\s*", ",", regex=True) # Ensure no spaces after commas
+            messy_data[col] = messy_data[col].str.strip() # Remove leading/trailing spaces
+            messy_data[col] = messy_data[col].str.replace(r"^,\s*|\s*,\s*$", "", regex=True) # Remove leading/trailing commas 
+
+    # Make a year column 
+    messy_data['year'] = messy_data['quarter'].str.slice(0, 4)
+
+    # Get rid of columns where the comma-separated values are merged into "other"
+    cols_to_drop = ['irae_type','brand_name','tumor_type','ici_drug_name','drug_class']
+    for col in cols_to_drop:
+        if col in messy_data.columns:
+            messy_data.drop(columns=col, inplace=True)
+
+    rename_dict = {
+        'irae_type_expanded': 'irae_type',
+        'ici_drug_name_expanded': 'ici_drug_name',
+        'brand_name_expanded': 'brand_name',
+        'drug_class_expanded': 'drug_class',
+        'tumor_type_expanded': 'tumor_type'
+    }
+
+    messy_data.rename(columns=rename_dict, inplace=True)
+
+    return messy_data 
+
+
+# TRY also including option to upload data
+st.sidebar.header("Data Options")
+
+uploaded_file = st.sidebar.file_uploader(
+    "Upload your own dataset (optional)", type=["csv"]
+)
+
+if uploaded_file is not None:
+    st.sidebar.success("Custom dataset uploaded successfully!")
+    df=pd.read_csv(uploaded_file)
+    df.replace("", pd.NA, inplace=True)
+
+else:
+    st.sidebar.info("Using default FAERS irAE dataset.")
+    df = load_data()
 
 # Instantiate manager class
 m = Manager(df)
@@ -46,6 +100,7 @@ if run_btn and question:
 
         elif res_type == "dataframe":
             st.dataframe(res_data, width="stretch", hide_index=True)
+            st.write(f"Result has {res_data.shape[0]} rows and {res_data.shape[1]} columns.")
 
         elif res_type == "number":
             st.metric(label="Result", value = res_data)

@@ -9,7 +9,6 @@ class StatsAgent:
     """
     Handles statistical analysis requests. 
     Uses LLM to suggest statistical tests in python code based on dataset sumary and user question.
-    If requested task is not possible given table schema, respond with a polite note saying so.
     Returns a tabular or numeric result.
     """
 
@@ -24,6 +23,7 @@ class StatsAgent:
         to answer the user's question.
         Use the dataframe variable name 'df'. Assign the answer to a variable 'result'.
         When possible, save entire result tables (e.g., from ttest or chi2 tests) to 'result'.
+        CRITICAL: If request is not possible given table schema, return only a polite note saying so to 'result'. Do NOT attempt to create or modify data to answer an impossible question.
         Do not include any explanations or markdown, only return the executable code.
 
         {df_summary}

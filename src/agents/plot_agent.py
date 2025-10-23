@@ -10,7 +10,6 @@ class PlotAgent:
     """
     Handles visualization requests.
     Uses LLM to suggest a seaborn plot based on dataset summary and user query.
-    CRITICAL: If requested plot/data is not possible given table schema, respond with a polite note saying so.
     Returns a matplotlib fig object to display in streamlit frontend.
     """
     def __init__(self, df, llm_client):
@@ -28,7 +27,8 @@ class PlotAgent:
         The code must not include plt.show().
         Always ensure the plot has meaningful data (avoid empty plots).
         When plotting categories, rotate x-axis labels if many categories exist.
-        When showing overlap (e.g. Venn diagrams), compute intersections properly using sets of patient IDs, not counts.
+        When showing overlap (e.g. Venn diagrams), compute intersections properly using sets of IDs, not counts.
+        CRITICAL: If requested plot/data is not possible given table schema, return only a polite note saying so. Assign this note to a variable 'result'. DO NOT attempt to create or modify data to answer an impossible question. 
 
         {df_summary}
 
@@ -50,11 +50,22 @@ class PlotAgent:
             # Execute the LLM-suggested seaborn plot command
             exec(code, {}, local_vars)
 
-            fig = plt.gcf()
+            result = local_vars.get("result", None)
 
-            return {"type": "plot",
+            if result is not None:
+
+                return {
+                    "type": "text",
                     "code": code,
-                    "data": fig}
+                    "data": str(result)
+                }
+
+            else:
+                fig = plt.gcf()
+
+                return {"type": "plot",
+                        "code": code,
+                        "data": fig}
 
         except Exception as e:
             err = traceback.format_exc()

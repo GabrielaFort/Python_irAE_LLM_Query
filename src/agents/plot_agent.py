@@ -22,17 +22,15 @@ class PlotAgent:
 
     def handle(self, question, df_summary):
         prompt = f"""
-        You are a python plotting assistant. Given the dataframe summary below, write Python code using seaborn and matplotlib to create a plot that answers the user's question. 
+        You are a python plotting assistant. Given the dataframe summary below, write Python code using using plotly to create an interactive plot that answers the user's question. 
         
         -- Use the dataframe variable name 'df'.
-        -- Assign the final plot object (e.g., a matplotlib Figure or Axes) to a variable named 'result'.
-        -- Use only the following libraries: pandas (pd), numpy (np), seaborn (sns), matplotlib.pyplot (plt), and scipy.stats (stats). Do NOT import anything else.
-        -- Do NOT call plt.show().
+        -- Assign the final plotly figure object to a variable named 'result'.
+        -- Use only pandas (pd), numpy (np), plotly.express (px), plotly.graph_objects (go), and scipy.stats (stats). Do NOT import anything else.
         -- The plot must contain meaningful data (avoid empty or all-NaN plots).
         -- You may create temporary variables but do NOT modify or overwrite the original 'df'.
         -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
-        -- Rotate x-axis labels if category labels would overlap.
-        -- For overlap-type plots (e.g., Venn diagrams), compute intersections using sets of IDs rather than counts.
+        -- Choose an appropriate chart type based on the question (e.g., line, bar, box, scatter, pie, donut, venn-equivalent overlap, etc).
         -- If the requested plot is not possible given the dataframe schema, assign a polite explanatory string to 'result' instead of plotting.
         -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
         -- Output only executable Python code—no markdown or explanations.

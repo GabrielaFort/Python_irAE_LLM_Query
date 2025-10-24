@@ -18,13 +18,19 @@ class StatsAgent:
 
     def handle(self, question, df_summary):
         prompt = f"""
-        You are a python statistical analysis assistant. Given the following dataframe summary, 
-        generate python code using pandas, numpy, or scipy, perform the appropriate statistical test
-        to answer the user's question.
-        Use the dataframe variable name 'df'. Assign the answer to a variable 'result'.
-        When possible, save entire result tables (e.g., from ttest or chi2 tests) to 'result'.
-        CRITICAL: If request is not possible given table schema, return only a polite note saying so to 'result'. Do NOT attempt to create or modify data to answer an impossible question.
-        Do not include any explanations or markdown, only return the executable code.
+        You are a python statistical analysis assistant. Given the dataframe summary below, write Python code using pandas, numpy, or scipy.stats to perform the appropriate statistical test that answers the user's question.
+        
+        -- Use the dataframe variable name 'df'.
+        -- Assign the final result (e.g., test statistic, p-value, correlation coefficient, or summary table) to a variable named 'result'.
+        -- Base your analysis only on the columns and data types shown in the dataframe summary. Do NOT assume any missing columns.
+        -- You may create temporary variables for intermediate calculations, but do NOT modify, overwrite, or alter the original 'df'.
+        -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
+        -- Choose an appropriate statistical method based on the question (e.g., t-test, chi-square, ANOVA, correlation, regression).       
+        -- Include relevant summary statistics if helpful (means, counts, etc.) but keep the output concise and numeric/textual — no plots.
+        -- If the request cannot be answered given the dataframe schema, assign a polite explanatory string to 'result' instead.
+        -- Use only pandas (pd), numpy (np), and scipy.stats (stats). Do NOT import anything else.
+        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
+        -- Output only executable Python code - no markdown or explanations.
 
         {df_summary}
 
@@ -38,13 +44,18 @@ class StatsAgent:
         return code
 
     def execute_code(self, code):
+        # Executes LLM-generated statistical code safely and returns the result
 
-        # Safe execution of LLM-suggested statistical code
+        # Restrict variables accessible during execution
         try:
-            local_vars = {"df": self.df, "pd": pd, "np": np, "stats": stats}
+            
+            # Provide a copy of the dataframe to avoid modifications
+            safe_locals = {"df": self.df.copy(), "pd": pd, "np": np, "stats": stats} # execute the generated code (it should assign the output to variable result) exec(code, {}, local_vars)
+
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {}, local_vars)
-            result = local_vars.get("result", None)
+            exec(code, {}, safe_locals)
+
+            result = safe_locals.get("result", None)
 
             if result is None:
                 return {
@@ -58,11 +69,10 @@ class StatsAgent:
                 display_data = float(result)
                 type_str = "number"
             elif isinstance(result, pd.DataFrame):
-                display_data = result.replace("", pd.NA)
+                display_data = result
                 type_str = "dataframe"
             elif isinstance(result, pd.Series):
                 display_data = result.to_frame()
-                display_data = display_data.replace("", pd.NA)
                 type_str = "dataframe"
             else:
                 display_data = str(result)

@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import traceback
 from src.utils import clean_code
+from scipy import stats
+
 
 class QueryAgent:
     def __init__(self, df, llm_client):
@@ -11,14 +13,22 @@ class QueryAgent:
 
     def handle(self, question, df_summary):
         prompt = f"""
-        You are a python data analysis assistant. Given the following dataframe summary, 
-        generate python code using pandas to answer the user's question.
-        Use the dataframe variable name 'df'. Assign the answer to a variable 'result'.
-        CRITICAL: If query is not possible given table schema, return only a polite note saying so to 'result'. Do NOT attempt to create or modify data to answer an impossible question.
-        Do not include any explanations or markdown, only return the executable code.
+        You are a python data analysis assistant. Given the dataframe summary below, generate python code using pandas to answer the user's question.
+        
+        -- Use the dataframe variable name 'df'.
+        -- Assign the answer to a variable named 'result'.
+        -- Base your code only on the columns and data types shown in the dataframe summary. Do NOT assume missing columns.
+        -- You may create new temporary DataFrames or Series to compute the answer, but do NOT modify, overwrite, or alter the original 'df'.
+        -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
+        -- If the query involves counts or comparisons across groups, make sure to group logically and use `.nunique()` for distinct items where appropriate.
+        -- Return the full dataframe subset or summary that answers the question, or a numeric/scalar value if appropriate.
+        -- If the query cannot be answered given the schema, assign a polite explanatory string to 'result' instead.
+        -- You may only use pandas (pd), numpy (np), and scipy.stats (stats). Do NOT import anything else.
+        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
+        -- Output only executable Python code—no markdown or explanations.
 
         {df_summary}
-
+ 
         Question: "{question}"
         """
 
@@ -29,13 +39,18 @@ class QueryAgent:
         return code
     
     def execute_code(self, code):
-
-         # Safe execution of LLM-suggested query code
+        # Executes LLM-generated query code safely and returns the result
+        
+        # Restrict variables accessible during execution
         try:
-            local_vars = {"df": self.df, "pd": pd, "np": np}
+
+            # Provide a copy of the dataframe to avoid modifications
+            safe_locals = {"df": self.df.copy(), "pd": pd, "np": np, "stats": stats} # execute the generated code (it should assign the output to variable result) exec(code, {}, local_vars)
+
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {}, local_vars)
-            result = local_vars.get("result", None)
+            exec(code, {}, safe_locals)
+
+            result = safe_locals.get("result", None)
 
             if result is None:
                 return {

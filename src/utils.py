@@ -19,13 +19,13 @@ def query_llm():
 def plotter_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
-                temperature=0.5)
+                temperature=0.6)
     return myllm
 
 def stats_llm():
     myllm = LLMClient(model="qwen/qwen3-coder-30b",
                 api_url="http://localhost:1234",
-                temperature=0)
+                temperature=0.1)
     return myllm  
 
 def error_checker_llm():

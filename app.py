@@ -56,20 +56,23 @@ def load_data():
 # TRY also including option to upload data
 # Just testing this, delete later
 # But proof of concept that my setup could be used for any table
-st.sidebar.header("Data Options")
+# st.sidebar.header("Data Options")
 
-uploaded_file = st.sidebar.file_uploader(
-    "Upload your own dataset (optional)", type=["csv"]
-)
+# uploaded_file = st.sidebar.file_uploader(
+#     "Upload your own dataset (optional)", type=["csv"]
+# )
 
-if uploaded_file is not None:
-    st.sidebar.success("Custom dataset uploaded successfully!")
-    df=pd.read_csv(uploaded_file)
-    df.replace("", pd.NA, inplace=True)
+# if uploaded_file is not None:
+#     st.sidebar.success("Custom dataset uploaded successfully!")
+#     df=pd.read_csv(uploaded_file)
+#     df.replace("", pd.NA, inplace=True)
+    
+# else:
+#     st.sidebar.info("Using default FAERS irAE dataset.")
+#     df = load_data()
 
-else:
-    st.sidebar.info("Using default FAERS irAE dataset.")
-    df = load_data()
+# Clean and load data 
+df = load_data()
 
 # Instantiate manager class
 m = Manager(df)

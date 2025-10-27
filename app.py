@@ -20,7 +20,12 @@ pio.templates["seaborn"].layout.colorway = [
     "rgba(110,140,170,0.8)", 
     "rgba(150,170,190,0.8)", 
     "rgba(200,140,120,0.8)", 
-    "rgba(120,150,110,0.8)", 
+    "rgba(120,150,110,0.8)",
+    "rgba(180,180,100,0.8)",
+    "rgba(160,110,160,0.8)",
+    "rgba(100,160,180,0.8)",
+    "rgba(210,160,100,0.8)",
+    "rgba(90,130,100,0.8)"
 ]
 
 # Helper function for plotly styling

@@ -62,10 +62,13 @@ class Manager:
             
             return result 
 
-        except Exception as e:  
+        except Exception as e:
+
+            err = traceback.format_exc()
+              
             return {
                 "type": "error",
-                "data": f"Fatal Manager error:\n\n{traceback.format_exc()}"
+                "data": f"Fatal Manager error: {e}\n\n{err}"
             }           
         
 

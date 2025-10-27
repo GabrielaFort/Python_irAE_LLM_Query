@@ -19,7 +19,9 @@ class QueryAgent:
         -- Assign the answer to a variable named 'result'.
         -- Base your code only on the columns and data types shown in the dataframe summary. Do NOT assume missing columns.
         -- You may create new temporary DataFrames or Series to compute the answer, but do NOT modify, overwrite, or alter the original 'df'.
-        -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
+        -- Some columns may contain multiple comma-separated values per record. When this is relevant:
+            - split those values using `str.split(r'\s*,\s*')` and use `explode()` to analyze them properly.
+            - If exploding multiple columns, ensure all have equal-length lists (pad shorter ones with None before exploding).
         -- If the query involves counts or comparisons across groups, make sure to group logically and use `.nunique()` for distinct items where appropriate.
         -- Return the full dataframe subset or summary that answers the question, or a numeric/scalar value if appropriate.
         -- If the query cannot be answered given the schema, assign a polite explanatory string to 'result' instead.
@@ -45,10 +47,11 @@ class QueryAgent:
         try:
 
             # Provide a copy of the dataframe to avoid modifications
-            safe_locals = {"df": self.df.copy(), "pd": pd, "np": np, "stats": stats} # execute the generated code (it should assign the output to variable result) exec(code, {}, local_vars)
+            safe_globals = {"pd": pd, "np": np, "stats": stats, "__builtins__": __builtins__} 
+            safe_locals = {"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {}, safe_locals)
+            exec(code, safe_globals, safe_locals)
 
             result = safe_locals.get("result", None)
 

@@ -50,10 +50,11 @@ class StatsAgent:
         try:
             
             # Provide a copy of the dataframe to avoid modifications
-            safe_locals = {"df": self.df.copy(), "pd": pd, "np": np, "stats": stats} # execute the generated code (it should assign the output to variable result) exec(code, {}, local_vars)
+            safe_locals = {"df": self.df.copy()} 
+            safe_globals = {"pd": pd, "np": np, "stats": stats, "__builtins__": __builtins__}
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {}, safe_locals)
+            exec(code, safe_globals, safe_locals)
 
             result = safe_locals.get("result", None)
 

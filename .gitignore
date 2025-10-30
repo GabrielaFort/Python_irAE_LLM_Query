@@ -2,3 +2,4 @@ __pycache__/
 .DS_Store
 ollama.tar
 streamlit.tar
+irae_llm_test.tar

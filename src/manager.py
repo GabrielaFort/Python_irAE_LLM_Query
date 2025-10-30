@@ -23,7 +23,6 @@ class Manager:
     def process_question(self, question):
         # Classify the question
         qtype = self.classifier.classify(question)
-
         if qtype == "query":
             agent = self.query_agent
         elif qtype == "plot":

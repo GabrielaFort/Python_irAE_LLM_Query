@@ -2,53 +2,35 @@
 from src.llm_client import LLMClient
 import pandas as pd 
 import numpy as np
-import os
 
-# Instantiate LLM clients with preset configurations
-def get_default_api_url():
-    """
-    Decide which LLM backend to use.
-    In Docker - use Ollama
-    On local Mac - use LM studio
-    """
-    if "OLLAMA_URL" in os.environ:
-        return os.environ["OLLAMA_URL"]
-    else:
-        return "http://localhost:1234"
-    
-def get_default_model():
-    if "OLLAMA_URL" in os.environ:
-        return "qwen3-coder:30b"
-    else:
-        return "qwen/qwen3-coder-30b"
-    
+# Instantiate LLM clients with preset configurations   
 def question_classifier_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://10.104.134.74:443",
                 temperature=0)
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://10.104.134.74:443",
                 temperature=0)
     return myllm
 
 def plotter_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://10.104.134.74:443",
                 temperature=0.6)
     return myllm
 
 def stats_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://10.104.134.74:443",
                 temperature=0.1)
     return myllm  
 
 def error_checker_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
+    myllm = LLMClient(model="qwen/qwen3-coder-30b",
+                api_url="http://10.104.134.74:443",
                 temperature=0)
     return myllm  
 

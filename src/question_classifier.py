@@ -19,12 +19,12 @@ class QuestionClassifier:
             return "stats"
         elif any(word in question_lower for word in query_keywords):
             return "query"
-
         else:
             # Fallback to LLM classification
             prompt = f"""
             Classify the task type of this question: "{question}"
             Choose one of: 'query', 'stats', or 'plot'. Return only the category name.
+            /no_think
             """
             
             classification = self.llm_client.generate(prompt).strip().lower()

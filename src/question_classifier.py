@@ -1,7 +1,7 @@
 class QuestionClassifier:
     """
-    Classifies user questions into categories: 'query' or 'plot'.
-    Uses lightweight LLM to interpret question if no heuristic matches are found.
+    Classifies user questions into categories: 'query', 'plot', or 'stats'.
+    Uses keyword detection and falls back to LLM classification if needed.
     """
     def __init__(self, llm_client):
         self.llm_client = llm_client

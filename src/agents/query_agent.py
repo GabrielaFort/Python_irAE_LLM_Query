@@ -32,6 +32,8 @@ class QueryAgent:
         {df_summary}
  
         Question: "{question}"
+
+        /no_think
         """
 
         # Generate and clean up code
@@ -52,7 +54,6 @@ class QueryAgent:
 
             # execute the generated code (it should assign the output to variable `result`)
             exec(code, safe_globals, safe_locals)
-
             result = safe_locals.get("result", None)
 
             if result is None:
@@ -70,8 +71,17 @@ class QueryAgent:
                 display_data = result.replace("", pd.NA)
                 type_str = "dataframe"
             elif isinstance(result, pd.Series):
-                display_data = result.to_frame()
-                display_data = display_data.replace("", pd.NA)
+                # Convert series to DF with index levels 
+                display_data = result.reset_index()
+                value_col = result.name if result.name else "value"
+                index_cols = [
+                    c if (isinstance(c, str) and c.strip() != "") else f"index_{i}"
+                    for i, c in enumerate(result.index.names or [])
+                ]
+                # If the Series has no index names, assign generic ones
+                if not index_cols or any(name is None for name in index_cols):
+                    index_cols = [f"index_{i}" for i in range(display_data.shape[1] - 1)]
+                display_data.columns = index_cols + [value_col]
                 type_str = "dataframe"
             else:
                 display_data = str(result)

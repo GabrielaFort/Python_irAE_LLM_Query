@@ -23,10 +23,11 @@ Error Traceback:
 
 Dataframe Summary:
 {df_summary}
+
+/no_think
             """
 
         # Generate and clean up code
         corrected_code = self.llm_client.generate(prompt)
         corrected_code = clean_code(corrected_code)
-
         return corrected_code

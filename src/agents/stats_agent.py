@@ -35,6 +35,8 @@ class StatsAgent:
         {df_summary}
 
         Question: "{question}"
+
+        /no_think
         """
 
         # Generate and clean up code
@@ -73,8 +75,19 @@ class StatsAgent:
                 display_data = result
                 type_str = "dataframe"
             elif isinstance(result, pd.Series):
-                display_data = result.to_frame()
+                # Convert series to DF with index levels 
+                display_data = result.reset_index()
+                value_col = result.name if result.name else "value"
+                index_cols = [
+                    c if (isinstance(c, str) and c.strip() != "") else f"index_{i}"
+                    for i, c in enumerate(result.index.names or [])
+                ]
+                # If the Series has no index names, assign generic ones
+                if not index_cols or any(name is None for name in index_cols):
+                    index_cols = [f"index_{i}" for i in range(display_data.shape[1] - 1)]
+                display_data.columns = index_cols + [value_col]
                 type_str = "dataframe"
+
             else:
                 display_data = str(result)
                 type_str = "text"

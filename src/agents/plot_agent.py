@@ -44,12 +44,13 @@ class PlotAgent:
         {df_summary}
 
         Question: "{question}"
+
+        /no_think
         """
 
         # Generate and clean up code
         code = self.llm_client.generate(prompt).strip()
         code = clean_code(code)
-
         return code
     
     def execute_code(self, code):

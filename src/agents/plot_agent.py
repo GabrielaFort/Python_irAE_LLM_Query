@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.tools import mpl_to_plotly
 from matplotlib_venn import venn2, venn3
+from collections import Counter
 
 class PlotAgent:
     """
@@ -60,7 +61,7 @@ class PlotAgent:
         # Restrict variables accessible during execution
         try:
             safe_locals = {"df": self.df.copy()}
-            safe_globals = {"pd":pd, "np":np, "stats":stats, "plt":plt, "sns":sns, "px":px, "go":go, "venn2":venn2, "venn3":venn3, "__builtins__":__builtins__} 
+            safe_globals = {"pd":pd, "np":np, "stats":stats, "plt":plt, "sns":sns, "px":px, "go":go, "venn2":venn2, "venn3":venn3, "Counter":Counter, "__builtins__":__builtins__} 
 
             # Execute the generated code
             exec(code, safe_globals, safe_locals)

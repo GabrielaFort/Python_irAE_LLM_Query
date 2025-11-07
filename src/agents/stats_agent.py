@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 import traceback
 from src.utils import clean_code
+from collections import Counter
 
 class StatsAgent:
     """
@@ -53,7 +54,7 @@ class StatsAgent:
             
             # Provide a copy of the dataframe to avoid modifications
             safe_locals = {"df": self.df.copy()} 
-            safe_globals = {"pd": pd, "np": np, "stats": stats, "__builtins__": __builtins__}
+            safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__}
 
             # execute the generated code (it should assign the output to variable `result`)
             exec(code, safe_globals, safe_locals)

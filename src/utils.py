@@ -129,6 +129,10 @@ def clean_code(code):
     
     # Strip leading/trailing whitespace
     code = code.strip()
+
+    # If code is a single line and doesn't already assign to result, prepend "result = "
+    if "\n" not in code and not code.lstrip().startswith("result"):
+        code = f"result = {code}"
     
     return code
 

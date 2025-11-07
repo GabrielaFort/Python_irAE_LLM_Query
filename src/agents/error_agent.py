@@ -10,7 +10,8 @@ class ErrorAgent:
 You are a python debugging assistant. Given the users question, dataframe summary,
 the original python code, and the error traceback, fix the code so it runs successfully 
 and still answers the question. Return ONLY valid, correct python code using the variable
-'df' for the dataframe. Do not include any explanations, only return the corrected code.
+'df' for the dataframe and the result assigned to the variable 'result'.
+Do not include any explanations, only return the corrected code.
 
 User Question:
 {question}

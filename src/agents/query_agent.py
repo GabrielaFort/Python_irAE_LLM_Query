@@ -4,7 +4,7 @@ import numpy as np
 import traceback
 from src.utils import clean_code
 from scipy import stats
-
+from collections import Counter
 
 class QueryAgent:
     def __init__(self, df, llm_client):
@@ -16,7 +16,7 @@ class QueryAgent:
         You are a python data analysis assistant. Given the dataframe summary below, generate python code using pandas to answer the user's question.
         
         -- Use the dataframe variable name 'df'.
-        -- Assign the answer to a variable named 'result'.
+        -- CRITICAL: Assign the answer to a variable named 'result'.
         -- Base your code only on the columns and data types shown in the dataframe summary. Do NOT assume missing columns.
         -- You may create new temporary DataFrames or Series to compute the answer, but do NOT modify, overwrite, or alter the original 'df'.
         -- Some columns may contain multiple comma-separated values per record. When this is relevant:
@@ -47,7 +47,7 @@ class QueryAgent:
         try:
 
             # Provide a copy of the dataframe to avoid modifications
-            safe_globals = {"pd": pd, "np": np, "stats": stats, "__builtins__": __builtins__} 
+            safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__} 
             safe_locals = {"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)

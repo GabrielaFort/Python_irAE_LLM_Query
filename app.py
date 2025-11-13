@@ -4,12 +4,35 @@ from src.manager import Manager
 import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
+import numpy as np
+from src.utils import load_data
 
 # Set up simple streamlit frontend for python LLM query of irae data
 st.set_page_config(
     page_title = "irAE Dataset LLM Assistant",
-    layout = "wide"
+    layout = "wide",
+    initial_sidebar_state = "collapsed"
 )
+
+# Some custom styling
+st.markdown("""
+<style>
+    .main {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+    }
+    .block-container {
+        padding-top: 2rem;
+    }
+    h1, h2, h3, h4 {
+        color: #22303C;
+    }
+    .dataframe {
+        font-size: 0.9rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Set a single global default (optional)
 pio.templates.default = "seaborn"
@@ -66,11 +89,12 @@ def apply_default_style(fig):
 
         # Scatter / line
         if t in ["scatter", "scattergl", "line"]:
+            has_multicolor = (hasattr(tr, "marker") and isinstance(getattr(tr.marker, "color", None), (list, np.ndarray)))
             tr.update(
                 marker=dict(
                     size=6,
                     opacity=0.85,
-                    color="rgba(70,120,150,0.8)",
+                    color=None if has_multicolor else getattr(tr.marker, "color", "rgba(70,120,150,0.8)"),
                     line=dict(width=0.5, color="black")
                 ),
                 line=dict(width=2, color="rgba(70,120,150,1)")
@@ -79,8 +103,8 @@ def apply_default_style(fig):
         # Bar / box / violin
         elif t in ["bar", "box", "violin"]:
             if hasattr(tr, "marker"):
-                if tr.marker.color is None:
-                    tr.marker.color = None
+                if getattr(tr.marker, "color", None) is None:
+                    tr.marker.color = "rgba(70,120,150,0.8)"
                 tr.marker.line = dict(width=1, color="black")
 
         # Heatmap / surface
@@ -99,48 +123,7 @@ plt.rcParams.update({"font.size": 14})
 
 
 # Load dataset from David
-@st.cache_data
-def load_data():
-    messy_data = pd.read_csv("data/data_david_new.csv", sep = "$")
-
-    # Replace any empty strings with NaN
-    messy_data.replace("", pd.NA, inplace=True)
-
-    # Change all "_" to "," so that rows with multiple entries are comma-separated always
-    string_cols = messy_data.select_dtypes(include='object').columns
-    for col in string_cols:
-        messy_data[col] = messy_data[col].str.replace("_", ",", regex=False)
-        messy_data[col] = messy_data[col].str.title() # Also capitalize first letter of each word
-
-    # Standardize any columns containing comma-separated values
-    for col in messy_data.columns:
-
-    # Identify whether any columns contain comma-separated entries suggesting multiple values per row
-        if messy_data[col].astype(str).str.contains(",").any():
-            messy_data[col] = messy_data[col].str.replace(r"\s*,\s*", ",", regex=True) # Ensure no spaces after commas
-            messy_data[col] = messy_data[col].str.strip() # Remove leading/trailing spaces
-            messy_data[col] = messy_data[col].str.replace(r"^,\s*|\s*,\s*$", "", regex=True) # Remove leading/trailing commas 
-
-    # Make a year column 
-    messy_data['year'] = messy_data['quarter'].str.slice(0, 4)
-
-    # Get rid of columns where the comma-separated values are merged into "other"
-    cols_to_drop = ['irae_type','brand_name','tumor_type','ici_drug_name','drug_class']
-    for col in cols_to_drop:
-        if col in messy_data.columns:
-            messy_data.drop(columns=col, inplace=True)
-
-    rename_dict = {
-        'irae_type_expanded': 'irae_type',
-        'ici_drug_name_expanded': 'ici_drug_name',
-        'brand_name_expanded': 'brand_name',
-        'drug_class_expanded': 'drug_class',
-        'tumor_type_expanded': 'tumor_type'
-    }
-
-    messy_data.rename(columns=rename_dict, inplace=True)
-
-    return messy_data 
+#@st.cache_data
 
 # Clean and load data 
 df = load_data()
@@ -150,18 +133,62 @@ m = Manager(df)
 
 # Setup app layout 
 st.title("irAE Dataset LLM Assistant")
-st.markdown(
-    "Ask natural language questions about the FAERS irAE dataset."
-    " The assistant will generate python code to compute or visualize the result."
-)
+st.markdown("""
+Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in the **FAERS** dataset.
 
-# Input question box
-question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.")
-run_btn = st.button("Submit", width="stretch")
+Use this tool to:
+- Ask questions about specific cancer types, drugs, or toxicities  
+- Generate plots or summaries of irAE patterns  
+- Automatically produce reproducible Python code
 
-# Main logic
-if run_btn and question:
-    with st.spinner("Analyzing your question..."):
+---
+""")
+
+# Data Overview Section
+st.header("Dataset Overview")
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Number of Records", f"{df.shape[0]:,}")
+with col2:
+    st.metric("Number of Columns", f"{df.shape[1]}")
+
+st.caption("Below is a preview of the FAERS irAE dataset:")
+st.dataframe(df.head(10), width='stretch', hide_index=True)
+
+with st.expander("View column descriptions"):
+    st.markdown("""
+    - **patient_id**: Unique identifier for each patient  
+    - **irae**: irAE(s) reported
+    - **irae_type**: Broader category of irAE
+    - **outcome**: Patient outcome 
+    - **ici_drug_name**: Immunotherapy drug(s) administered 
+    - **brand_name**: Brand name(s) of immunotherapy drug(s) administered  
+    - **drug_class**: Class of immunotherapy drug(s)
+    - **cancer_drug_name**: Other anti-cancer or chemotherapy drugs administered
+    - **combination status**: Whether immunotherapy was given in combination with other drugs
+    - **other_drug_name**: Other non-cancer and non-ici drugs administered
+    - **tumor_type**: Reported primary cancer
+    - **time_to_onset**: Weeks from drug start to irAE onset
+    - **age**: Patient age in years
+    - **age_group**: Groups by age range
+    - **sex**: Patient sex
+    - **quarter**: FAERS reporting quarter
+    - **year**: FAERS reporting year   
+    """)
+
+st.markdown("---")
+
+
+### Query interface ###
+st.header("Ask a Question")
+# Input question box with Enter submission
+with st.form("query_form", clear_on_submit=False):
+    question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.")
+    submitted = st.form_submit_button("Submit", width='stretch')
+
+if submitted and question:
+    with st.spinner("Processing your question..."):
         result = m.process_question(question)
 
     res_type = result.get('type')
@@ -202,8 +229,6 @@ if run_btn and question:
 
     with tab_code:
         st.code(res_code or "No code generated.", language = "python")
-
-
 
 else:
     st.info("Enter a question above to get started.")

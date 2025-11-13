@@ -19,11 +19,13 @@ class QueryAgent:
         -- CRITICAL: Assign the answer to a variable named 'result'.
         -- Base your code only on the columns and data types shown in the dataframe summary. Do NOT assume missing columns.
         -- You may create new temporary DataFrames or Series to compute the answer, but do NOT modify, overwrite, or alter the original 'df'.
-        -- Some columns may contain multiple comma-separated values per record. When this is relevant:
+        -- Some columns may contain multiple comma-separated values per record. CRITICAL:
             - split those values using `str.split(r'\s*,\s*')` and use `explode()` to analyze them properly.
             - If exploding multiple columns, ensure all have equal-length lists (pad shorter ones with None before exploding).
         -- If the query involves counts or comparisons across groups, make sure to group logically and use `.nunique()` for distinct items where appropriate.
-        -- Return the full dataframe subset or summary that answers the question, or a numeric/scalar value if appropriate.
+        -- Return the FULL dataframe subset or summary that answers the question, or a numeric/scalar value if appropriate.
+        -- Return all columns needed to understand the result. For subsetting style questions, return all original columns.
+        -- You may only export a pandas DataFrame, or a single numeric/scalar value as the result, unless the query cannot be answered.
         -- If the query cannot be answered given the schema, assign a polite explanatory string to 'result' instead.
         -- You may only use pandas (pd), numpy (np), and scipy.stats (stats). Do NOT import anything else.
         -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
@@ -51,7 +53,7 @@ class QueryAgent:
             safe_locals = {"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, safe_globals, safe_locals)
+            exec(code, {**safe_globals, **safe_locals}, safe_locals)
 
             result = safe_locals.get("result", None)
 

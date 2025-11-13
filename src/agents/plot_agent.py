@@ -31,14 +31,14 @@ class PlotAgent:
         -- Use only pandas (pd), numpy (np), plotly.express (px), plotly.graph_objects (go), and scipy.stats (stats). Do NOT import anything else!
         -- The plot must contain meaningful data (avoid empty or all-NaN plots).
         -- You may create temporary variables but do NOT modify or overwrite the original 'df'.
-        -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
+        -- Some columns may contain multiple comma-separated values per record. CRITICAL: When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
         -- Choose an appropriate chart type based on the question (e.g., line, bar, box, scatter, pie, donut, venn diagram, etc).
         -- If the requested plot is not possible given the dataframe schema, assign a polite explanatory string to 'result' instead of plotting.
         -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
         -- When creating bar plots of counts or value frequencies, always convert Series or Counter outputs to a DataFrame using `reset_index()`, and refer to column names in Plotly Express (e.g., `px.bar(df, x='col', y='count')`).
         -- For overlap or co-occurrence plots, you may use matplotlib_venn to create a static Venn diagram. 
                 - Import from `matplotlib_venn import venn2` (or venn3 if needed). 
-                - Assign the resulting Matplotlib Axes object to 'result'.
+                - CRITICAL: Assign the resulting Matplotlib Axes object to 'result'.
                 - Do not attempt to recreate Venns in Plotly.
         -- Output only executable Python code—no markdown or explanations.
 
@@ -63,7 +63,7 @@ class PlotAgent:
             safe_globals = {"pd":pd, "np":np, "stats":stats, "plt":plt, "sns":sns, "px":px, "go":go, "venn2":venn2, "venn3":venn3, "Counter":Counter, "__builtins__":__builtins__} 
 
             # Execute the generated code
-            exec(code, safe_globals, safe_locals)
+            exec(code, {**safe_globals, **safe_locals}, safe_locals)
 
             # Retrieve result if defined
             result = safe_locals.get("result", None)

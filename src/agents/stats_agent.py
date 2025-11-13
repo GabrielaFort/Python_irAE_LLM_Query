@@ -22,15 +22,16 @@ class StatsAgent:
         You are a python statistical analysis assistant. Given the dataframe summary below, write Python code using pandas, numpy, or scipy.stats to perform the appropriate statistical test that answers the user's question.
         
         -- Use the dataframe variable name 'df'.
-        -- Assign the final result (e.g., test statistic, p-value, correlation coefficient, or summary table) to a variable named 'result'.
+        -- Store the final results (e.g., test statistics, p-values, correlation coefficients, or summary tables) in a pandas dataframe containing all relevant information.
+        -- Save the output dataframe to a variable named 'result'.
         -- Base your analysis only on the columns and data types shown in the dataframe summary. Do NOT assume any missing columns.
         -- You may create temporary variables for intermediate calculations, but do NOT modify, overwrite, or alter the original 'df'.
         -- Some columns may contain multiple comma-separated values per record. When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
         -- Choose an appropriate statistical method based on the question (e.g., t-test, chi-square, ANOVA, correlation, regression).       
-        -- Include relevant summary statistics if helpful (means, counts, etc.) but keep the output concise and numeric/textual — no plots.
+        -- Include relevant summary statistics if helpful (means, counts, etc.) but keep the output concise — no plots.
         -- If the request cannot be answered given the dataframe schema, assign a polite explanatory string to 'result' instead.
         -- Use only pandas (pd), numpy (np), and scipy.stats (stats). Do NOT import anything else.
-        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
+        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do not fill, impute, or alter data values.
         -- Output only executable Python code - no markdown or explanations.
 
         {df_summary}
@@ -55,7 +56,7 @@ class StatsAgent:
             safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__}
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, safe_globals, safe_locals)
+            exec(code, {**safe_globals, **safe_locals}, safe_locals)
 
             result = safe_locals.get("result", None)
 

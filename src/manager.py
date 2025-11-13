@@ -24,7 +24,7 @@ class Manager:
         # Classify the question
         qtype = self.classifier.classify(question)
 
-        if qtype == "query":
+        if qtype == "tableqa":
             agent = self.query_agent
         elif qtype == "plot":
             agent = self.plot_agent

@@ -5,52 +5,84 @@ import numpy as np
 import os
 
 # Instantiate LLM clients with preset configurations
-def get_default_api_url():
-    """
-    Decide which LLM backend to use.
-    In Docker - use Ollama
-    On local Mac - use LM studio
-    """
-    if "OLLAMA_URL" in os.environ:
-        return os.environ["OLLAMA_URL"]
-    else:
-        return "http://localhost:1234"
-    
-def get_default_model():
-    if "OLLAMA_URL" in os.environ:
-        return "qwen3-coder:30b"
-    else:
-        return "qwen/qwen3-coder-30b"
-    
-def question_classifier_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
-                temperature=0)
+def question_classifier_llm(): 
+    myllm = LLMClient(model="gpt-oss:20b-cloud",
+                api_url="https://ollama.com",
+                temperature=0,
+                api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
-                temperature=0)
+    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+                api_url="https://ollama.com",
+                temperature=0,
+                api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def plotter_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
-                temperature=0.6)
+    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+                api_url="https://ollama.com",
+                temperature=0.6,
+                api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def stats_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
-                temperature=0.1)
+    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+                api_url="https://ollama.com",
+                temperature=0.1,
+                api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
 
 def error_checker_llm():
-    myllm = LLMClient(model=get_default_model(),
-                api_url=get_default_api_url(),
-                temperature=0)
+    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+                api_url="https://ollama.com",
+                temperature=0,
+                api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
+
+
+# Function to load and clean the irAE dataset
+def load_data():
+    messy_data = pd.read_csv("data/data_david_new.csv", sep = "$")
+
+    # Replace any empty strings with NaN
+    messy_data.replace("", pd.NA, inplace=True)
+
+    # Change all "_" to "," so that rows with multiple entries are comma-separated always
+    string_cols = messy_data.select_dtypes(include='object').columns
+    for col in string_cols:
+        messy_data[col] = messy_data[col].str.replace("_", ",", regex=False)
+        messy_data[col] = messy_data[col].str.title() # Also capitalize first letter of each word
+
+    # Standardize any columns containing comma-separated values
+    for col in messy_data.columns:
+
+    # Identify whether any columns contain comma-separated entries suggesting multiple values per row
+        if messy_data[col].astype(str).str.contains(",").any():
+            messy_data[col] = messy_data[col].str.replace(r"\s*,\s*", ",", regex=True) # Ensure no spaces after commas
+            messy_data[col] = messy_data[col].str.strip() # Remove leading/trailing spaces
+            messy_data[col] = messy_data[col].str.replace(r"^,\s*|\s*,\s*$", "", regex=True) # Remove leading/trailing commas 
+
+    # Make a year column 
+    messy_data['year'] = messy_data['quarter'].str.slice(0, 4)
+
+    # Get rid of columns where the comma-separated values are merged into "other"
+    cols_to_drop = ['irae_type','brand_name','tumor_type','ici_drug_name','drug_class']
+    for col in cols_to_drop:
+        if col in messy_data.columns:
+            messy_data.drop(columns=col, inplace=True)
+
+    rename_dict = {
+        'irae_type_expanded': 'irae_type',
+        'ici_drug_name_expanded': 'ici_drug_name',
+        'brand_name_expanded': 'brand_name',
+        'drug_class_expanded': 'drug_class',
+        'tumor_type_expanded': 'tumor_type'
+    }
+
+    messy_data.rename(columns=rename_dict, inplace=True)
+
+    return messy_data 
 
 
 # This function will take a dataframe as input and return a summary of the dataframe

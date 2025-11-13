@@ -2,42 +2,35 @@
 import requests
 
 class LLMClient:
-    def __init__(self, model, api_url, temperature):
+    def __init__(self, model, api_url, temperature, api_key):
         self.model = model
         self.api_url = api_url
         self.temperature = temperature
+        self.api_key = api_key
+
 
     def generate(self, prompt):
         """
-        Automativally handle both LM studio and Ollama APIs
+        Use Ollama API format
         """
-        if "11434" in self.api_url:
-            # Ollama mode
-            payload = {
-                "model": self.model,
-                "prompt":prompt,
-                "temperature": self.temperature,
-                "stream": False
+        headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
             }
-            response = requests.post(f"{self.api_url}/api/generate", json=payload)
-            response.raise_for_status()
-            content = response.json()
-            if "response" in content:
-                return content["response"].strip()
-            else:
-                raise ValueError(f"Unexpected response format from Ollama API: {content}")
-            
-        else:
-            # LM Studio mode
-            payload = {
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": self.temperature,
-                "max_tokens": 1024
-            }
-            
-            response = requests.post(f"{self.api_url}/v1/chat/completions", json=payload)
-            response.raise_for_status()
-            content = response.json()
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": self.temperature,
+            "stream": False
+        }
+        response = requests.post(f"{self.api_url}/api/chat", headers=headers, json=payload)
+        response.raise_for_status()
+        content = response.json()
 
-            return content["choices"][0]["message"]["content"]
+        # Extract assistant message content
+        if "message" in content and "content" in content["message"]:
+            return content["message"]["content"].strip()
+        else:
+            raise ValueError(f"Unexpected response: {content}")
+            
+

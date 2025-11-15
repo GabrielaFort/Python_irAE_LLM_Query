@@ -16,7 +16,7 @@ def benchmark_question_classifier(file_path, model_name):
     '''
 
     # Load benchmark data
-    df = pd.read_excel(file_path) if file_path.endswith('.xlsx') else pd.read_csv(file_path, encoding="latin1")
+    df = pd.read_excel(file_path) if file_path.endswith('.xlsx') else pd.read_csv(file_path)
     df.columns = [col.strip().lower() for col in df.columns]
 
     # Detect relevant columns

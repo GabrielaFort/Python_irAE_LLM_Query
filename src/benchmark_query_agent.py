@@ -4,91 +4,140 @@ import traceback
 from scipy import stats
 from collections import Counter
 import os
+import time
 
 from src.agents.query_agent import QueryAgent
 from src.llm_client import LLMClient
 from src.utils import summarize_dataframe, load_data
 
-
-
 # Functions to benchmark query agent
 # These functions serve to evaluate LLM-generated responses for different query types
 
-# Is this handling NA's correctly?????
-def filtering_eval(gold_result, llm_result):
+def normalize_dataframe(df, context="filtering", atol=0.01):
     """
-    Evaluate filtering-style queries by comparing LLM result to gold standard.
-    Returns 1 if they match, else 0.
-    Handles DataFrames, Series, arrays, and lists.
+    Standardize dataframe content for fair comparison:
+    - Lowercase, strip whitespace, remove % symbols
+    - Convert numeric-looking strings to float
+    - Quantize or round numerics for tolerance
+    - Replace missing with __NA__
     """
+    df = df.copy()
 
-    # Handle missing or invalid inputs
-    if gold_result is None or llm_result is None:
-        return 0
+    for c in df.columns:
+        s = df[c]
+        s = s.astype(str).str.strip().str.lower().str.replace("%", "", regex=False)
+        s = s.replace({"nan": np.nan, "none": np.nan})
 
-    # --- Flatten gold_result ---
-    if isinstance(gold_result, pd.DataFrame):
-        if gold_result.shape[1] == 1:
-            gold_flat = gold_result.iloc[:, 0].dropna().values
+        # Try to coerce to float where possible
+        if pd.api.types.is_numeric_dtype(s):
+            s = pd.to_numeric(s, errors="coerce").astype(float)  # <-- ensures 20 == 20.0
+            if context == "filtering":
+                s = np.round(s / atol) * atol
+            elif context == "grouping":
+                s = s.round(6)
+        df[c] = s
+
+    return df.fillna("__NA__")
+
+
+def filtering_eval(gold_result, llm_result, atol=0.01):
+    """
+    Evaluate 'filtering' outputs (subset-style DataFrames).
+    Requires identical rows (ignoring order) and same set of columns.
+    Numeric quantization absorbs float/int differences.
+    1-column outputs are name-tolerant.
+    """
+    import pandas as pd, numpy as np
+
+    def to_df(x):
+        if isinstance(x, pd.DataFrame): return x.copy()
+        if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
+        if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
+        return pd.DataFrame({"value": [x]})
+
+    gold, llm = to_df(gold_result), to_df(llm_result)
+    gold.columns = [str(c).strip().lower() for c in gold.columns]
+    llm.columns = [str(c).strip().lower() for c in llm.columns]
+
+    # Align columns if both are single-column or same set
+    if set(gold.columns) != set(llm.columns):
+        if gold.shape[1] == 1 and llm.shape[1] == 1:
+            llm.columns = gold.columns
         else:
-            gold_flat = gold_result.values.flatten()
-    elif isinstance(gold_result, pd.Series):
-        gold_flat = gold_result.dropna().values
-    elif isinstance(gold_result, (list, np.ndarray)):
-        gold_flat = np.array(gold_result).flatten()
-    else:
+            return 0
+    llm = llm[gold.columns]
+
+    gold_s = normalize_dataframe(gold, "filtering", atol)
+    llm_s  = normalize_dataframe(llm,  "filtering", atol)
+
+    if gold_s.shape != llm_s.shape:
         return 0
 
-    # --- Flatten llm_result ---
-    if isinstance(llm_result, pd.DataFrame):
-        if llm_result.shape[1] == 1:
-            llm_flat = llm_result.iloc[:, 0].dropna().values
+    # Row-agnostic comparison
+    gold_sorted = gold_s.sort_values(by=list(gold_s.columns)).reset_index(drop=True)
+    llm_sorted  = llm_s.sort_values(by=list(gold_s.columns)).reset_index(drop=True)
+
+    return int(gold_sorted.equals(llm_sorted))
+
+
+def grouping_eval(gold_result, llm_result, atol=0.1):
+    """
+    Evaluate 'grouping' outputs (aggregated summaries).
+    Requires same columns & row count.
+    Allows rounding/float precision differences.
+    Compares after row sorting and numeric tolerance.
+    """
+    import pandas as pd, numpy as np
+
+    def to_df(x):
+        if isinstance(x, pd.DataFrame): return x.copy()
+        if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
+        if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
+        return pd.DataFrame({"value": [x]})
+
+    gold, llm = to_df(gold_result), to_df(llm_result)
+    gold.columns = [str(c).strip().lower() for c in gold.columns]
+    llm.columns  = [str(c).strip().lower() for c in llm.columns]
+
+    if set(gold.columns) != set(llm.columns):
+        if gold.shape[1] == 1 and llm.shape[1] == 1:
+            llm.columns = gold.columns
         else:
-            llm_flat = llm_result.values.flatten()
-    elif isinstance(llm_result, pd.Series):
-        llm_flat = llm_result.dropna().values
-    elif isinstance(llm_result, (list, np.ndarray)):
-        llm_flat = np.array(llm_result).flatten()
-    else:
+            return 0
+    llm = llm[gold.columns]
+
+    gold_s = normalize_dataframe(gold, "grouping", atol)
+    llm_s  = normalize_dataframe(llm,  "grouping", atol)
+
+    if gold_s.shape != llm_s.shape:
         return 0
 
-    # --- Convert both to strings for fair comparison ---
-    gold_flat = pd.Series(gold_flat).dropna().astype(str).str.strip().str.lower()
-    llm_flat  = pd.Series(llm_flat).dropna().astype(str).str.strip().str.lower()
+    # Sort both for row-agnostic comparison
+    sort_cols = list(gold_s.columns)
+    gold_s, llm_s = gold_s.sort_values(by=sort_cols).reset_index(drop=True), llm_s.sort_values(by=sort_cols).reset_index(drop=True)
 
-    # --- Try numeric comparison first ---
-    gold_num = pd.to_numeric(gold_flat, errors="coerce").dropna()
-    llm_num  = pd.to_numeric(llm_flat, errors="coerce").dropna()
-    if len(gold_num) and len(llm_num):
-        if set(np.round(gold_num, 3)) == set(np.round(llm_num, 3)):
-            return 1
+    num_cols = gold_s.select_dtypes(include=[np.number]).columns
 
-    # --- Fallback: string-based comparison (order-insensitive) ---
-    if set(gold_flat) == set(llm_flat):
-        return 1
+    for c in num_cols:
+        g = pd.to_numeric(gold_s[c], errors="coerce")
+        l = pd.to_numeric(llm_s[c], errors="coerce")
 
-    return 0
+        # Round both sides to a consistent precision (e.g., 2 decimals)
+        g_rounded = g.round(2)
+        l_rounded = l.round(2)
 
+        # Compare with a generous tolerance
+        if not np.allclose(g_rounded, l_rounded, atol=max(atol, 0.5), equal_nan=True):
+            return 0
 
-
-def invalid_eval(llm_result):
-    '''
-    Evaluate if the LLM correctly refused to answer an invalid query.
-    Returns 1 if LLM output if a string with no coding keywords, else 0.
-    '''
-
-    if not isinstance(llm_result, str):
-        return 0
-
-    coding_keywords = ['def ', 'import', 'print', 'elif', 'return', 'pandas', 'numpy','pd.','np.','dropna','groupby','==','.explode','.str.contains','.isna']
-
-    if any(keyword in llm_result for keyword in coding_keywords):
-        return 0
+    text_cols = [c for c in gold_s.columns if c not in num_cols]
+    for c in text_cols:
+        if not gold_s[c].fillna("").equals(llm_s[c].fillna("")):
+            return 0
 
     return 1
 
 
-# Will this work if llm result is interpreted as a string? 
 def count_eval(gold_result, llm_result):
     '''
     Evaluate count-style queries by comparing LLM result to gold standard.
@@ -119,6 +168,24 @@ def count_eval(gold_result, llm_result):
         return 1
     
     return 0
+
+
+def invalid_eval(llm_result):
+    '''
+    Evaluate if the LLM correctly refused to answer an invalid query.
+    Returns 1 if LLM output if a string with no coding keywords, else 0.
+    '''
+
+    if not isinstance(llm_result, str):
+        return 0
+
+    coding_keywords = ['def ', 'import', 'print', 'elif', 'pandas', 'numpy','pd.','np.','dropna','groupby','==','.explode','.str.contains','.isna']
+
+    if any(keyword in llm_result for keyword in coding_keywords):
+        return 0
+
+    return 1
+
 
 
 # Now need to generate LLM code using query agent
@@ -161,15 +228,21 @@ def run_gold_code(gold_code):
     # First, read in and clean dataset using function from app.py
     df = load_data()
 
+    # Decode any escaped characters in the code
+    gold_code = gold_code.encode('utf-8').decode('unicode_escape')
+
     # Restrict variables accessible during execution
     try:
-        safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__} 
-        safe_locals = {"df" : df.copy()}
-
+        context = {
+            "__builtins__": __builtins__,
+            "pd": pd,
+            "np": np,
+            "df": df.copy()
+        }
         # execute the gold standard code (it should assign the output to variable `result`)
-        exec(gold_code, {**safe_globals, **safe_locals}, safe_locals)
+        exec(gold_code, context)
 
-        result = safe_locals.get("result", None)
+        result = context.get("result", None)
 
         return result
 
@@ -205,19 +278,29 @@ def benchmark_query_agent(benchmark_cases, model):
         llm_result_dict = run_query_agent(question, model)
         llm_result = llm_result_dict.get('data', None)
         llm_type = llm_result_dict.get('type', None)
-        print("LLM code executed.")
 
         # Skip scoring on execution errors
         if llm_type == "error":
-            score = 0
-        
+            results.append({"question": question,
+            "eval_type": eval_type,
+            "score": 0,
+            "llm_code": llm_result_dict.get("code", ""),
+            "gold_code": gold_code,
+            "llm_result_preview": str(llm_result)[:200],
+            "gold_result_preview":""})
+            time.sleep(40)
+            continue
+
         # Run gold code
         gold_result = run_gold_code(gold_code)
-        print("Gold code executed.")
 
         # Evaluate based on eval_type
         if eval_type == "filtering":
             score = filtering_eval(gold_result, llm_result)
+        elif eval_type == "grouping":
+            score = grouping_eval(gold_result, llm_result)
+        elif eval_type == "ranking":
+            score = grouping_eval(gold_result, llm_result)
         elif eval_type == "count":
             score = count_eval(gold_result, llm_result)
         elif eval_type == "invalid":
@@ -235,6 +318,8 @@ def benchmark_query_agent(benchmark_cases, model):
             "gold_result_preview": str(gold_result)[:200]
         })
 
+        time.sleep(40) # Pause between requests to avoid rate limits
+
     # Make final df with results
     df_results = pd.DataFrame(results)
 
@@ -248,24 +333,26 @@ def benchmark_query_agent(benchmark_cases, model):
 
 # Example usage
 if __name__ == "__main__":
-    benchmark_cases = [
-        {
-            "question": "Return the patient IDs of those treated with pembrolizumab.",
-            "gold_code": "result=df[df['ici_drug_name'].str.contains(r'Pembrolizumab', na=False, case=False)]['patient_id'].unique()",
-            "eval_type": "filtering"
-        },
-        {
-            "question": "How many patients experienced colitis?",
-            "gold_code": "result=len(df[df['irae'].str.contains(r'Colitis',na=False,case=False)])",
-            "eval_type": "count"
-        },
-        {
-            "question": "Only return age and irae type and immunotherapy treatment for patients treated with pembrolizumab.",
-            "gold_code": "pembro_patients = df[ df['ici_drug_name'].str.contains('Pembrolizumab', na=False, case=False)]\nresult = pembro_patients[['age', 'irae_type', 'ici_drug_name']]",
-            "eval_type": "filtering"
-        },
-    ]
+    file_path = "data/benchmark_questions_111025.xlsx"
+    df = pd.read_excel(file_path)
 
-    results = benchmark_query_agent(benchmark_cases, model="deepseek-v3.1:671b-cloud")
-    results.to_csv("benchmark_query_agent_results.csv", index=False)
-    # print(results)
+    df.columns = [c.strip().lower().replace(" ","_") for c in df.columns]
+
+    benchmark_cases = []
+
+    for idx, row in df.iterrows():
+        case = {
+            "question": row['question'],
+            "gold_code": str(row['answer']).strip(),
+            "eval_type": row['category'].strip().lower()
+        }
+        benchmark_cases.append(case)
+
+    # Run benchmark query agent
+    model = "kimi-k2:1t-cloud"
+    results = benchmark_query_agent(benchmark_cases, model=model)
+    results.to_csv(f"data/benchmark_query_agent_results_{model}.csv", index=False)
+    
+
+
+

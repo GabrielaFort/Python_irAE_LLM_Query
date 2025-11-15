@@ -24,23 +24,34 @@ class PlotAgent:
 
     def handle(self, question, df_summary):
         prompt = f"""
-        You are a python plotting assistant. Given the dataframe summary below, write Python code using using plotly to create an interactive plot that answers the user's question. 
+        You are a python plotting assistant.
+        Given the dataframe summary below, write Python code using using plotly to create an informative, interactive plot that answers the user's question. 
         
-        -- Use the dataframe variable name 'df'.
-        -- Assign the final plotly figure object to a variable named 'result'.
-        -- Use only pandas (pd), numpy (np), plotly.express (px), plotly.graph_objects (go), and scipy.stats (stats). Do NOT import anything else!
-        -- The plot must contain meaningful data (avoid empty or all-NaN plots).
-        -- You may create temporary variables but do NOT modify or overwrite the original 'df'.
-        -- Some columns may contain multiple comma-separated values per record. CRITICAL: When this is relevant, split those values using `str.split(r'\\s*,\\s*')` and use `explode()` to analyze them properly.
-        -- Choose an appropriate chart type based on the question (e.g., line, bar, box, scatter, pie, donut, venn diagram, etc).
-        -- If the requested plot is not possible given the dataframe schema, assign a polite explanatory string to 'result' instead of plotting.
-        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
-        -- When creating bar plots of counts or value frequencies, always convert Series or Counter outputs to a DataFrame using `reset_index()`, and refer to column names in Plotly Express (e.g., `px.bar(df, x='col', y='count')`).
-        -- For overlap or co-occurrence plots, you may use matplotlib_venn to create a static Venn diagram. 
-                - Import from `matplotlib_venn import venn2` (or venn3 if needed). 
-                - CRITICAL: Assign the resulting Matplotlib Axes object to 'result'.
-                - Do not attempt to recreate Venns in Plotly.
-        -- Output only executable Python code—no markdown or explanations.
+        **Rules**
+        - Use the dataframe variable name 'df'.
+        - Assign the final figure object to a variable named 'result'.
+        - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, `plotly.express (px)`, `plotly.graph_objects (go)`, `scipy.stats (stats)` are already imported.
+        - Only use columns and data types shown in the summary. Do **not** assume any others.
+        - Choose the most appropriate plot type based on the user's question: e.g., line, bar, box, scatter, pie, donut, venn diagram, etc.
+        - You may create temporary DataFrames or Series for intermediate calculations, but never modify or overwrite 'df'.
+
+        **Data Handling**
+        - Handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` and `explode()`.
+        - If exploding multiple columns, pad shorter lists with `None` before exploding.
+        - Handle missing values safely by excluding them; never impute or alter data.
+        - Ensure the plot contains meaningful data — avoid empty or all-NaN visualizations.
+
+        **Special Cases**
+        - For overlap or co-occurrence plots:
+        - You may import `venn2` or `venn3` from `matplotlib_venn`.
+        - Assign the resulting Matplotlib Axes object to `result` instead of a Plotly figure.
+        - Do **not** attempt to recreate Venn diagrams using Plotly.
+
+        **Output**
+        - Assign the final Plotly (or Matplotlib) figure to the variable `result`.
+        - Do not produce textual summaries or markdown.
+        - If the requested plot is not feasible given the schema, assign a short explanatory string to `result` instead.
+        - Output **only** executable Python code — no markdown, comments, or explanations.
 
         {df_summary}
 

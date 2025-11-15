@@ -13,23 +13,27 @@ class QueryAgent:
 
     def handle(self, question, df_summary):
         prompt = f"""
-        You are a python data analysis assistant. Given the dataframe summary below, generate python code using pandas to answer the user's question.
+        You are a python data analysis assistant.
+        Given the dataframe summary below, write executable python code using pandas to answer the user's question.
         
-        -- Use the dataframe variable name 'df'.
-        -- CRITICAL: Assign the answer to a variable named 'result'.
-        -- Base your code only on the columns and data types shown in the dataframe summary. Do NOT assume missing columns.
-        -- You may create new temporary DataFrames or Series to compute the answer, but do NOT modify, overwrite, or alter the original 'df'.
-        -- Some columns may contain multiple comma-separated values per record. CRITICAL:
-            - split those values using `str.split(r'\s*,\s*')` and use `explode()` to analyze them properly.
-            - If exploding multiple columns, ensure all have equal-length lists (pad shorter ones with None before exploding).
-        -- If the query involves counts or comparisons across groups, make sure to group logically and use `.nunique()` for distinct items where appropriate.
-        -- Return the FULL dataframe subset or summary that answers the question, or a numeric/scalar value if appropriate.
-        -- Return all columns needed to understand the result. For subsetting style questions, return all original columns.
-        -- You may only export a pandas DataFrame, or a single numeric/scalar value as the result, unless the query cannot be answered.
-        -- If the query cannot be answered given the schema, assign a polite explanatory string to 'result' instead.
-        -- You may only use pandas (pd), numpy (np), and scipy.stats (stats). Do NOT import anything else.
-        -- The data may contain missing values (NaNs). Handle them safely by excluding missing entries. Do NOT fill, impute, or alter data values.
-        -- Output only executable Python code—no markdown or explanations.
+        **Rules**
+        - Use dataframe name 'df'.
+        - Assign the final answer to 'result'.
+        - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, and `scipy.stats (stats)` are already imported.
+        - Only use columns and data types shown in the summary. Do **not** assume others. 
+        - You may create temp DataFrames/Series/columns but never modify 'df'.
+        - Handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` or `explode()`.
+        - If exploding multiple columns, pad shorter lists with `None` before exploding.
+        - Always use `.str.contains(..., case=False, na=False)` for text matching — never use equality (`==`) for strings.
+        - Exclude missing values safely, but do not drop rows unless necessary.
+        - Unless explicitly instructed otherwise, always prefer returning a DataFrame that preserves the full schema of the original data (same column names, same order) — especially for
+          filtering or lookup-style questions.
+        - For counts/comparisons, group logically and use '.nunique()' where appropriate.
+        - Return:
+            - a DataFrame subset/summary that answers the question, **or**
+            - a single numeric/scalar value if suitable.
+        - If unanswerable from schema, assign a short explanatory string to 'result'.
+        - Output **only** executable **Python code**, no markdown or explanations.
 
         {df_summary}
  
@@ -49,13 +53,13 @@ class QueryAgent:
         try:
 
             # Provide a copy of the dataframe to avoid modifications
-            safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__} 
-            safe_locals = {"df" : self.df.copy()}
+            safes = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
+            #safe_locals = {"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {**safe_globals, **safe_locals}, safe_locals)
+            exec(code, safes)
 
-            result = safe_locals.get("result", None)
+            result = safes.get("result", None)
 
             if result is None:
                 return {
@@ -68,22 +72,61 @@ class QueryAgent:
             elif isinstance(result, (int, float, np.number, np.generic)):
                 display_data = float(result)
                 type_str = "number"
+
             elif isinstance(result, pd.DataFrame):
                 display_data = result.replace("", pd.NA)
                 type_str = "dataframe"
+
             elif isinstance(result, pd.Series):
                 # Convert series to DF with index levels 
-                display_data = result.reset_index()
-                value_col = result.name if result.name else "value"
-                index_cols = [
-                    c if (isinstance(c, str) and c.strip() != "") else f"index_{i}"
-                    for i, c in enumerate(result.index.names or [])
-                ]
-                # If the Series has no index names, assign generic ones
-                if not index_cols or any(name is None for name in index_cols):
-                    index_cols = [f"index_{i}" for i in range(display_data.shape[1] - 1)]
-                display_data.columns = index_cols + [value_col]
+                display_data = result.reset_index(drop=True).to_frame()
+                display_data = display_data.replace("", pd.NA)
                 type_str = "dataframe"
+
+            # Lists and NumPy arrays
+            elif isinstance(result, np.ndarray):
+                if result.ndim == 1:
+                    display_data = pd.DataFrame(result, columns=["value"])
+                    display_data = display_data.replace("", pd.NA)
+                    type_str = "dataframe"
+                else:
+                    display_data = pd.DataFrame(result)
+                    display_data = display_data.replace("", pd.NA)
+                    type_str = "dataframe"
+
+            elif isinstance(result, list):
+            # Convert simple lists to a single-column DataFrame
+                try:
+                    arr = np.array(result, dtype=object)
+                    if arr.ndim == 1:
+                        display_data = pd.DataFrame(arr, columns=["value"])
+                        display_data = display_data.replace("", pd.NA)
+                        type_str = "dataframe"
+                    else:
+                        display_data = pd.DataFrame(arr)
+                        display_data = display_data.replace("", pd.NA)
+                        type_str = "dataframe"
+                except Exception:
+                    display_data = pd.DataFrame(result, columns=["value"])
+                    display_data = display_data.replace("", pd.NA)
+                    type_str = "dataframe"
+
+            elif isinstance(result, pd.Index):
+                display_data = result.tolist()
+                display_data = pd.DataFrame(display_data, columns=["value"])
+                display_data = display_data.replace("", pd.NA)
+                type_str = "dataframe"
+
+            elif isinstance(result, set):
+                display_data = pd.DataFrame(sorted(result), columns=["value"])
+                display_data = display_data.replace("", pd.NA)
+                type_str = "dataframe"
+            
+            elif isinstance(result, dict):
+                display_data = pd.DataFrame(result)
+                display_data = display_data.replace("", pd.NA)
+                type_str = "dataframe"
+
             else:
                 display_data = str(result)
                 type_str = "text"    

@@ -156,6 +156,16 @@ with col2:
 st.caption("Below is a preview of the FAERS irAE dataset:")
 st.dataframe(df.head(10), width='stretch', hide_index=True)
 
+# Download section
+csv = df.to_csv(index=False).encode('utf-8')
+st.download_button(
+    label="Download Full Dataset (CSV)",
+    data=csv,
+    file_name="irae_faers_dataset.csv",
+    mime="text/csv",
+    help="Download the entire dataset as a CSV file."
+)
+
 with st.expander("View column descriptions"):
     st.markdown("""
     - **patient_id**: Unique identifier for each patient  

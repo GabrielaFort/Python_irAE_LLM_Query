@@ -6,6 +6,8 @@ import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
 from src.utils import load_data
+from matplotlib_venn._common import VennDiagram
+
 
 # Set up simple streamlit frontend for python LLM query of irae data
 st.set_page_config(
@@ -221,7 +223,7 @@ if submitted and question:
             st.plotly_chart(fig, config=plotly_config)
 
         # Handle matplotlib plots like venn diagrams
-        elif res_type == "plot" and isinstance(res_data, plt.Figure) or hasattr(res_data, "figure"):
+        elif res_type == "plot" and isinstance(res_data, plt.Figure) or hasattr(res_data, "figure") or isinstance(res_data, VennDiagram):
             st.pyplot(res_data, clear_figure=True)
 
         elif res_type == "dataframe":

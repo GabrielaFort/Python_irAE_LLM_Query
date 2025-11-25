@@ -6,35 +6,35 @@ import os
 
 # Instantiate LLM clients with preset configurations
 def question_classifier_llm(): 
-    myllm = LLMClient(model="gpt-oss:20b-cloud",
+    myllm = LLMClient(model="qwen3-coder:480b-cloud",
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+    myllm = LLMClient(model="glm-4.6:cloud",
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def plotter_llm():
-    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+    myllm = LLMClient(model="gpt-oss:120b-cloud",
                 api_url="https://ollama.com",
                 temperature=0.6,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def stats_llm():
-    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+    myllm = LLMClient(model="glm-4.6:cloud",
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
 
 def error_checker_llm():
-    myllm = LLMClient(model="deepseek-v3.1:671b-cloud",
+    myllm = LLMClient(model="qwen3-coder:480b-cloud",
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
@@ -43,7 +43,7 @@ def error_checker_llm():
 
 # Function to load and clean the irAE dataset
 def load_data():
-    messy_data = pd.read_csv("data/data_david_new.csv", sep = "$")
+    messy_data = pd.read_csv("data/data_new.csv", sep = "$")
 
     # Replace any empty strings with NaN
     messy_data.replace("", pd.NA, inplace=True)

@@ -24,7 +24,7 @@ class QueryAgent:
         - You may create temp DataFrames/Series/columns but never modify 'df'.
         - Handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` or `explode()`.
         - If exploding multiple columns, pad shorter lists with `None` before exploding.
-        - Always use `.str.contains(..., case=False, na=False)` for text matching — never use equality (`==`) for strings.
+        - Prefer using `.str.contains(..., case=False, na=False)` for text matching — particularly for comma-separated values.
         - Exclude missing values safely, but do not drop rows unless necessary.
         - Unless explicitly instructed otherwise, always prefer returning a DataFrame that preserves the full schema of the original data (same column names, same order) — especially for
           filtering or lookup-style questions.

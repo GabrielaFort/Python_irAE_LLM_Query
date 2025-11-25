@@ -20,25 +20,44 @@ class StatsAgent:
     def handle(self, question, df_summary):
         prompt = f"""
         You are a python statistical analysis assistant.
-        Given the dataframe summary below, write executable Python code using pandas, numpy, or scipy.stats to perform the appropriate statistical test or summary that answers the user's question.
+        Given the dataframe summary below, generate **only executable Python code** that answers the user's statistical question.
 
         **Rules**        
-        - Use the dataframe variable name 'df'.
-        - Assign the final output to a variable named 'result'.
+        - The input dataframe is named 'df'.
+        - Assign the final answer to a variable named 'result'.
+        - Each row corresponds to one subject/sample.
         - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, and `scipy.stats (stats)` are already imported.
         - Only use columns and data types shown in the summary. Do **not** assume any others.
-        - You may create temporary DataFrames, Series, or variables for intermediate calculations, but never modify or overwrite 'df'.
+        - You may create temporary variables, but never modify or overwrite 'df'.
 
         **Data Handling**
-        - Handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` or `explode()`.
-        - If exploding multiple columns, pad shorter lists with `None` before exploding.
-        - Handle missing values safely by excluding them; never impute or fill values.
-        - For numeric columns, automatically convert to float where needed for statistical testing.
+        - For comma-separated columns, always use:  
+            `str.split(r'\\s*,\\s*', regex=True)` followed by `explode()` only when required.
+        - When exploding **multiple columns**, they MUST come from the **same original DataFrame** so co-occurring values remain aligned.
+            *Never* explode two different DataFrames and align them by index.
+        - NEVER create contingency tables from independently exploded columns.
+            Always explode **within the same DataFrame** before grouping.
+        - Always drop rows containing NA values *only for the variables used in the test*. Do not treat NAs as 0 or impute them.
+        - For correlation tests, ensure both vectors have equal length after NA removal.
 
         **Output**
-        - Always include relevant test statistics (e.g., t, r, χ²), degrees of freedom (if applicable), and p-values.
-        - Always store the final output in a pandas DataFrame called `result` containing all relevant test outcomes or summary statistics.
-        - If the analysis cannot be performed with the given schema, assign a short explanatory string to `result` instead.
+        - For any statistical test including t-test, Mann–Whitney, chi-square, ANOVA, Kruskal–Wallis, correlations:
+            • Return a **single-row pandas DataFrame** assigned to `result`, unless instructed otherwise.
+            • The DataFrame columns MUST be named after the statistics returned.
+
+        - Standard output formats:
+            * Generic statistical test:
+            result = pd.DataFrame({{'statistic': [stat],'p_value': [p_value]}})
+
+            * Correlation tests (Pearson/Spearman):
+            result = pd.DataFrame({{'correlation': [corr],'p_value': [p_value]}})
+
+        - For COUNT-type questions requiring a single numeric answer:
+            Assign the scalar directly:
+            result = some_number
+
+        - If the requested analysis cannot be completed using the available schema, assign a short explanatory string to `result`.
+
         - Output **only** executable Python code — no markdown, comments, or explanations.
 
         {df_summary}
@@ -59,13 +78,12 @@ class StatsAgent:
         try:
             
             # Provide a copy of the dataframe to avoid modifications
-            safe_locals = {"df": self.df.copy()} 
-            safe_globals = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__}
+            safes = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
 
             # execute the generated code (it should assign the output to variable `result`)
-            exec(code, {**safe_globals, **safe_locals}, safe_locals)
+            exec(code, safes)
 
-            result = safe_locals.get("result", None)
+            result = safes.get("result", None)
 
             if result is None:
                 return {

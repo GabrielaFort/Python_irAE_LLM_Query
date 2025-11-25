@@ -56,7 +56,7 @@ def benchmark_question_classifier(file_path, model_name):
     print(f"\nResults saved to {out_path}")
 
 if __name__ == "__main__":
-    model_list = ["deepseek-v3.1:671b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","kimi-k2:1t-cloud","qwen3-coder:480b-cloud","glm-4.6:cloud","minimax-m2:cloud"]
+    model_list = ["deepseek-v3.1:671b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud","glm-4.6:cloud","kimi-k2:1t-cloud","cogito-2.1:671b-cloud","minimax-m2:cloud"]
     # Example usage
     for model in model_list:
         print(f"\n\nBenchmarking model: {model}\n")

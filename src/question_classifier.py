@@ -7,9 +7,9 @@ class QuestionClassifier:
         self.llm_client = llm_client
 
     def classify(self, question):
-        plot_keywords = ["plot", "graph", "chart", "visualize", "histogram", "scatter", "bar", "line", "figure", "box","volcano","heatmap", "piechart", "pie chart","donut"]
+        plot_keywords = ["plot", "graph", "chart", "histogram", "scatter", "bar", "line", "box","volcano","heatmap", "piechart", "pie chart", "donut"]
         stat_keywords = ["statistical", "correlation", "regression", "significant", "p-value", "anova", "t-test", "mann-whitney","wilcoxon","chi-square", "average","median","mean","standard deviation","confidence interval"]
-        query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all","retrieve","get all"]
+        query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all","retrieve"]
         question_lower = question.lower()
 
         # Keyword-based detection

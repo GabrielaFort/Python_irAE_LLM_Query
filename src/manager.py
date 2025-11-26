@@ -20,9 +20,9 @@ class Manager:
         # Summarize the dataframe - will need every time we instantiate this class
         self.df_summary = summarize_dataframe(df)
 
-    def process_question(self, question):
+    def process_question(self, question, context=None):
         # Classify the question
-        qtype = self.classifier.classify(question)
+        qtype = self.classifier.classify(question, context=context)
 
         if qtype == "tableqa":
             agent = self.query_agent
@@ -37,7 +37,7 @@ class Manager:
         
         # Try to handle the question with the selected agent
         try:
-            code = agent.handle(question, self.df_summary)
+            code = agent.handle(question, self.df_summary, context=context)
             result = agent.execute_code(code)
             
             if result["type"] == "error":

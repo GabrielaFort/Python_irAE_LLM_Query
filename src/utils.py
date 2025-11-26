@@ -169,6 +169,33 @@ def clean_code(code):
     return code
 
 
+# Function to build context for prompt using session history gathered through streamlit frontend session state
+def build_context(history, max_turns = 10):
+    """
+    Build lightweight conversational memory for the LLM.
+    Use only user questions and generated code strings.
+    """
+    if not history:
+        return ""
+    
+    recent = history[-max_turns:]
+
+    lines = ["Conversation History:"]
+
+    for h in recent:
+        user_question = h.get("question", "")
+        code_str = h.get("code", None)
+
+        if not code_str:
+            code_str = "No code generated."
+
+        lines.append(f"\nUser Asked: {user_question}")
+        lines.append("LLM generated this code:")
+        lines.append(code_str.strip())
+
+    return "\n".join(lines) + "\nEnd of Conversation History.\n"
+
+
 if __name__ == "__main__":
     # Simple test of summarize_dataframe function
     df = pd.read_csv("../data/data_david_new.csv", sep="$")

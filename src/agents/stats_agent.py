@@ -17,7 +17,10 @@ class StatsAgent:
         self.df = df
         self.llm_client = llm_client
 
-    def handle(self, question, df_summary):
+    def handle(self, question, df_summary, context=None):
+
+        memory_block = f"{context}\n\n" if context else ""
+        
         prompt = f"""
         You are a python statistical analysis assistant.
         Given the dataframe summary below, generate **only executable Python code** that answers the user's statistical question.
@@ -63,6 +66,8 @@ class StatsAgent:
         {df_summary}
 
         Question: "{question}"
+
+        Conversation Memory: {memory_block}
         """
 
         # Generate and clean up code

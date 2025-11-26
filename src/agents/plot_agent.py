@@ -23,7 +23,11 @@ class PlotAgent:
         self.df = df
         self.llm_client = llm_client
 
-    def handle(self, question, df_summary):
+    def handle(self, question, df_summary, context=None):
+
+        # Build memory block if context provided
+        memory_block = f"{context}\n\n" if context else ""
+
         prompt = f"""
         You are a python plotting assistant.
         Given the dataframe summary below, write Python code using using plotly to create an informative, interactive plot that answers the user's question. 
@@ -59,6 +63,8 @@ class PlotAgent:
         {df_summary}
 
         Question: "{question}"
+
+        Conversation Memory: {memory_block}
         """
 
         # Generate and clean up code

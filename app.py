@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utils import load_data
+from src.utils import load_data, build_context
 from matplotlib_venn._common import VennDiagram
 
 
@@ -15,6 +15,27 @@ st.set_page_config(
     layout = "wide",
     initial_sidebar_state = "collapsed"
 )
+
+# Set up session state for storing chat history
+if "history" not in st.session_state:
+    st.session_state["history"] = []
+
+if "use_memory" not in st.session_state:
+    st.session_state["use_memory"] = True
+
+if "last_result" not in st.session_state:
+    st.session_state["last_result"] = None
+
+# Sidebar controls for memory
+with st.sidebar:
+    st.header("Session Settings")
+    st.checkbox("Enable session memory", key="use_memory")
+    if st.button("Clear conversation", width = "stretch"):
+        st.session_state["history"] = []
+        st.session_state["last_result"] = None
+        st.rerun()
+
+
 
 # Some custom styling
 st.markdown("""
@@ -99,7 +120,7 @@ def apply_default_style(fig):
                     color=None if has_multicolor else getattr(tr.marker, "color", "rgba(70,120,150,0.8)"),
                     line=dict(width=0.5, color="black")
                 ),
-                line=dict(width=2, color="rgba(70,120,150,1)")
+                line=dict(width=2)
             )
 
         # Bar / box / violin
@@ -199,10 +220,37 @@ with st.form("query_form", clear_on_submit=False):
     question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.")
     submitted = st.form_submit_button("Submit", width='stretch')
 
-if submitted and question:
-    with st.spinner("Processing your question..."):
-        result = m.process_question(question)
+result = None
 
+if submitted and question:
+
+    # Build LLM memory context from session history
+    context = None
+    if st.session_state.get("use_memory", True):
+        context = build_context(st.session_state["history"], max_turns=10)
+
+    with st.spinner("Processing your question..."):
+        result = m.process_question(question, context=context)
+
+    # Extract LLM generated code for memory
+    code_str = result.get("code") if isinstance(result, dict) else None
+    
+    if st.session_state.get("use_memory", True):
+        st.session_state["history"].append({
+            "question": question,
+            "code": code_str
+        })
+
+# If no new result but session has history, keep showing the last full result
+if result is None:
+    result = st.session_state.get("last_result", None)
+
+# Save the last real result separately
+if result is not None:
+    st.session_state["last_result"] = result
+
+# Display Results
+if result is not None:
     res_type = result.get('type')
     res_data = result.get('data')
     res_code = result.get('code')
@@ -216,9 +264,9 @@ if submitted and question:
         if res_type == "plotly" and isinstance(res_data, go.Figure):
 
             plotly_config = {"displayModeBar": True,
-                            "scrollZoom": True,
-                            "responsive": True,
-                            "editable": True}
+                                "scrollZoom": True,
+                                "responsive": True,
+                                "editable": True}
             fig = apply_default_style(res_data)
             st.plotly_chart(fig, config=plotly_config)
 
@@ -235,7 +283,7 @@ if submitted and question:
 
         elif res_type == "error":
             st.error(res_data)
-        
+            
         else:
             st.write(res_data)
 
@@ -246,9 +294,19 @@ else:
     st.info("Enter a question above to get started.")
 
 
+# Conversation history display
+if st.session_state["history"]:
+    st.markdown("---")
+    st.subheader("Session conversation history")
 
+    past_turns = (
+        st.session_state["history"][:-1]
+        if len(st.session_state["history"]) > 1
+        else []
+    )
 
-
-
-
+    for i, turn in enumerate(st.session_state["history"][:-1], start=1):
+        st.markdown(f"**Q{i}: {turn['question']}**")
+        with st.expander("View generated code"):
+            st.code(turn.get("code") or "No code generated.", language="python")
 

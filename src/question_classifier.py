@@ -30,7 +30,7 @@ class QuestionClassifier:
         Classify the task type of this question: "{question}". Base the response on the current question as well as the conversation history if available.
         Choose one of: 'tableQA', 'stats', or 'plot'. Return only the category name.
 
-        Conversation Memory: {memory_block}
+        Conversation Memory (most recent message LAST): {memory_block}
         """
             
         classification = self.llm_client.generate(prompt).strip().lower()

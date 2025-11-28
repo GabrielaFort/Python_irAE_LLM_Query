@@ -16,26 +16,18 @@ st.set_page_config(
     initial_sidebar_state = "collapsed"
 )
 
-# Set up session state for storing chat history
+# Initialize session state
 if "history" not in st.session_state:
     st.session_state["history"] = []
-
-if "use_memory" not in st.session_state:
-    st.session_state["use_memory"] = True
 
 if "last_result" not in st.session_state:
     st.session_state["last_result"] = None
 
-# Sidebar controls for memory
-with st.sidebar:
-    st.header("Session Settings")
-    st.checkbox("Enable session memory", key="use_memory")
-    if st.button("Clear conversation", width = "stretch"):
-        st.session_state["history"] = []
-        st.session_state["last_result"] = None
-        st.rerun()
+if "pending_question" not in st.session_state:
+    st.session_state["pending_question"] = None
 
-
+if "rerun_query" not in st.session_state:
+    st.session_state["rerun_query"] = None
 
 # Some custom styling
 st.markdown("""
@@ -144,10 +136,6 @@ def apply_default_style(fig):
 # Matplot lib venn viagram style
 plt.rcParams.update({"font.size": 14})
 
-
-# Load dataset from David
-#@st.cache_data
-
 # Clean and load data 
 df = load_data()
 
@@ -156,6 +144,8 @@ m = Manager(df)
 
 # Setup app layout 
 st.title("irAE Dataset LLM Assistant")
+
+# Introduction section
 st.markdown("""
 Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in the **FAERS** dataset.
 
@@ -180,14 +170,14 @@ st.caption("Below is a preview of the FAERS irAE dataset:")
 st.dataframe(df.head(10), width='stretch', hide_index=True)
 
 # Download section
-csv = df.to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="Download Full Dataset (CSV)",
-    data=csv,
-    file_name="irae_faers_dataset.csv",
-    mime="text/csv",
-    help="Download the entire dataset as a CSV file."
-)
+#csv = df.to_csv(index=False).encode('utf-8')
+#st.download_button(
+#    label="Download Full Dataset (CSV)",
+#    data=csv,
+#    file_name="irae_faers_dataset.csv",
+#    mime="text/csv",
+#    help="Download the entire dataset as a CSV file."
+#)
 
 with st.expander("View column descriptions"):
     st.markdown("""
@@ -212,22 +202,52 @@ with st.expander("View column descriptions"):
 
 st.markdown("---")
 
+# Pre-load question into text box if rerun is scheduled
+if st.session_state["pending_question"] is not None:
+    st.session_state["question_input"] = st.session_state["pending_question"]
+    st.session_state["pending_question"] = None
+
 
 ### Query interface ###
 st.header("Ask a Question")
+
 # Input question box with Enter submission
 with st.form("query_form", clear_on_submit=False):
-    question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.")
+    question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.",key="question_input", autocomplete="off")
     submitted = st.form_submit_button("Submit", width='stretch')
 
+# Reset session button
+if st.button("Reset Conversation"):
+    st.session_state["history"] = []
+    st.session_state["last_result"] = None
+    st.session_state["pending_question"] = "" 
+    st.rerun()
+
+# Handle rerun logic
+if st.session_state["rerun_query"]:
+    question = st.session_state["rerun_query"]
+    st.session_state["rerun_query"] = None
+
+    # Rebuild context
+    context = build_context(st.session_state["history"], max_turns=10)
+
+    with st.spinner("Reprocessing your question..."):
+        result = m.process_question(question, context=context)
+    
+    # Add to history immediately 
+    code_str = result.get("code") if isinstance(result, dict) else None
+    st.session_state["history"].append({"question": question, "code": code_str})
+
+    st.session_state["last_result"] = result
+    st.rerun()  
+
+# Process new question submission 
 result = None
 
 if submitted and question:
 
     # Build LLM memory context from session history
-    context = None
-    if st.session_state.get("use_memory", True):
-        context = build_context(st.session_state["history"], max_turns=10)
+    context = build_context(st.session_state["history"], max_turns=10)
 
     with st.spinner("Processing your question..."):
         result = m.process_question(question, context=context)
@@ -235,8 +255,8 @@ if submitted and question:
     # Extract LLM generated code for memory
     code_str = result.get("code") if isinstance(result, dict) else None
     
-    if st.session_state.get("use_memory", True):
-        st.session_state["history"].append({
+    # Update session history
+    st.session_state["history"].append({
             "question": question,
             "code": code_str
         })
@@ -256,7 +276,7 @@ if result is not None:
     res_code = result.get('code')
 
     # Tabs for organizing results
-    tab_result, tab_code = st.tabs(["Result","Generated Code"])
+    tab_result = st.tabs(["Result"])[0]
 
     with tab_result:
 
@@ -267,6 +287,7 @@ if result is not None:
                                 "scrollZoom": True,
                                 "responsive": True,
                                 "editable": True}
+            
             fig = apply_default_style(res_data)
             st.plotly_chart(fig, config=plotly_config)
 
@@ -287,9 +308,6 @@ if result is not None:
         else:
             st.write(res_data)
 
-    with tab_code:
-        st.code(res_code or "No code generated.", language = "python")
-
 else:
     st.info("Enter a question above to get started.")
 
@@ -299,14 +317,17 @@ if st.session_state["history"]:
     st.markdown("---")
     st.subheader("Session conversation history")
 
-    past_turns = (
-        st.session_state["history"][:-1]
-        if len(st.session_state["history"]) > 1
-        else []
-    )
+    for i, turn in enumerate(st.session_state["history"], start=1):
+        col_q, col_btn = st.columns([4,1])
 
-    for i, turn in enumerate(st.session_state["history"][:-1], start=1):
-        st.markdown(f"**Q{i}: {turn['question']}**")
-        with st.expander("View generated code"):
-            st.code(turn.get("code") or "No code generated.", language="python")
+        with col_q:
+            st.markdown(f"**Q{i}: {turn['question']}**")
+
+        with col_btn:
+            if st.button("Rerun", key=f"rerun_{i}", help="Rerun this query", width='stretch'):
+                st.session_state["pending_question"] = turn['question']
+                st.session_state["rerun_query"] = turn['question']
+                st.rerun()
+
+
 

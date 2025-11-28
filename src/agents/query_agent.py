@@ -14,7 +14,7 @@ class QueryAgent:
     def handle(self, question, df_summary, context=None):
 
         memory_block = f"{context}\n\n" if context else ""
-        
+
         prompt = f"""
         You are a python data analysis assistant.
         Given the dataframe summary below, write executable python code using pandas to answer the user's question.
@@ -42,7 +42,7 @@ class QueryAgent:
  
         Question: "{question}"
 
-        Conversation Memory: {memory_block}
+        Conversation Memory (most recent message LAST): {memory_block}
         """
 
         # Generate and clean up code

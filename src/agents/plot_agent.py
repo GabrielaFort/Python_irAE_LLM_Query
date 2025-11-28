@@ -64,7 +64,7 @@ class PlotAgent:
 
         Question: "{question}"
 
-        Conversation Memory: {memory_block}
+        Conversation Memory (most recent message LAST): {memory_block}
         """
 
         # Generate and clean up code

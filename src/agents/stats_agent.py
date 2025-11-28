@@ -20,7 +20,7 @@ class StatsAgent:
     def handle(self, question, df_summary, context=None):
 
         memory_block = f"{context}\n\n" if context else ""
-        
+
         prompt = f"""
         You are a python statistical analysis assistant.
         Given the dataframe summary below, generate **only executable Python code** that answers the user's statistical question.
@@ -67,7 +67,7 @@ class StatsAgent:
 
         Question: "{question}"
 
-        Conversation Memory: {memory_block}
+        Conversation Memory (most recent message LAST): {memory_block}
         """
 
         # Generate and clean up code

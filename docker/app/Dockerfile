@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy all app code
 COPY src ./src
-COPY data ./data
+COPY data/data_new.csv ./data/data_new.csv
 COPY app.py .
 
 # Copy requirements

@@ -2,19 +2,37 @@
 # It uses the QuestionClassifier to determine the type of question
 
 from src.question_classifier import QuestionClassifier
-from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, summarize_dataframe
-from src.agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent
+from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, guideline_llm, summarize_dataframe, load_kb
+from src.agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent, GuidelineAgent
 import traceback
+import numpy as np
+from sentence_transformers import SentenceTransformer
 
 class Manager:
     def __init__(self,df):
         self.df = df
+
+        # Load knowledge base for GuidelineAgent
+        # Load KB once
+        kb_pages, kb_emb = load_kb()
+
+        # Load embedding model once
+        self.embed_model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
+
+        # Embedding function 
+        def embed_fn(text):
+            vec = self.embed_model.encode(text, convert_to_numpy=True)
+            vec = vec / np.linalg.norm(vec)
+            return vec
+        
+        self.embed_fn = embed_fn
 
         # Instantiate LLM clients for classifier and agents
         self.classifier = QuestionClassifier(question_classifier_llm())
         self.query_agent = QueryAgent(df,query_llm())
         self.plot_agent = PlotAgent(df,plotter_llm())
         self.stats_agent = StatsAgent(df,stats_llm())
+        self.guideline_agent = GuidelineAgent(guideline_llm(), kb_pages, kb_emb)
         self.error_agent = ErrorAgent(error_checker_llm())
 
         # Summarize the dataframe - will need every time we instantiate this class
@@ -30,6 +48,8 @@ class Manager:
             agent = self.plot_agent
         elif qtype == "stats":
             agent = self.stats_agent
+        elif qtype == "guideline":
+            return self.guideline_agent.handle(question, self.embed_fn, context=context)
         else:
             return({"type": "text",
                       "code": None,

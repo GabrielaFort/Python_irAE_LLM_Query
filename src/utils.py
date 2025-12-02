@@ -1,8 +1,12 @@
 # Helpful functions
+from streamlit import json
 from src.llm_client import LLMClient
 import pandas as pd 
 import numpy as np
 import os
+import json
+import re
+import html
 
 # Instantiate LLM clients with preset configurations
 def question_classifier_llm(): 
@@ -39,6 +43,13 @@ def error_checker_llm():
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
+
+def guideline_llm():
+    myllm = LLMClient(model="gpt-oss:120b-cloud",
+                api_url="https://ollama.com",
+                temperature=0.1,
+                api_key=os.getenv("OLLAMA_API_KEY"))
+    return myllm
 
 
 # Function to load and clean the irAE dataset
@@ -168,6 +179,24 @@ def clean_code(code):
     
     return code
 
+# Function to clean text extracted from PDFs or other sources
+def clean_text(text):
+
+    # Remove <br> and <br/> tags
+    text = re.sub(r"<br\s*/?>", "\n", text)
+
+    # Unescape HTML (e.g., &lt; = <)
+    text = html.unescape(text)
+
+    # Replace weird bullet points
+    text = text.replace("•", "- ")
+    text = text.replace("", "- ")
+
+    # Remove leftover HTML tags
+    text = re.sub(r"<[^>]+>", "", text)
+
+    return text.strip()
+
 
 # Function to build context for prompt using session history gathered through streamlit frontend session state
 def build_context(history, max_turns = 10):
@@ -194,6 +223,19 @@ def build_context(history, max_turns = 10):
         lines.append(code_str.strip())
 
     return "\n".join(lines) + "\nEnd of Conversation History.\n"
+
+
+# Function to load the knowledge base (pages and embeddings)
+def load_kb(KB_DIR="src/knowledge_base"):
+    pages_path = os.path.join(KB_DIR, "pages.json")
+    emb_path = os.path.join(KB_DIR, "embeddings.npy")
+
+    with open(pages_path) as f:
+        pages = json.load(f)
+
+    embeddings = np.load(emb_path)
+
+    return pages, embeddings
 
 
 if __name__ == "__main__":

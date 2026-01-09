@@ -1,6 +1,6 @@
-from question_classifier import QuestionClassifier
-from llm_client import LLMClient
-from utils import stats_llm   
+from src.question_classifier import QuestionClassifier
+from src.llm_client import LLMClient
+from src.utils import stats_llm   
 
 # Instantiate question classifier
 classifier = QuestionClassifier(stats_llm())

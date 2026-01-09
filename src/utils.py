@@ -11,9 +11,9 @@ import html
 # Instantiate LLM clients with preset configurations
 def question_classifier_llm(): 
     myllm = LLMClient(model="qwen3-coder:480b-cloud",
-                api_url="https://ollama.com",
-                temperature=0,
-                api_key=os.getenv("OLLAMA_API_KEY"))
+                      api_url="https://ollama.com",
+                      temperature=0,
+                      api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def query_llm():
@@ -240,7 +240,7 @@ def load_kb(KB_DIR="src/knowledge_base"):
 
 if __name__ == "__main__":
     # Simple test of summarize_dataframe function
-    df = pd.read_csv("../data/data_david_new.csv", sep="$")
+    df = pd.read_csv("data/data_new.csv", sep="$")
     #df = pd.read_csv("../data/irae_data_cleaned.csv")
     print(summarize_dataframe(df, max_rows=5))
     

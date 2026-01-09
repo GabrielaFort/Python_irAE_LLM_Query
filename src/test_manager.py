@@ -1,7 +1,7 @@
 import pandas as pd
-from manager import Manager
+from src.manager import Manager
 
-df = pd.read_csv("../data/irae_data_cleaned.csv")
+df = pd.read_csv("data/irae_data_cleaned.csv")
 m = Manager(df)
 
 questions = [

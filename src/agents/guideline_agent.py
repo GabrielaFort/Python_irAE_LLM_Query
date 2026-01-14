@@ -3,47 +3,56 @@ from src.utils import clean_text
 
 class GuidelineAgent:
 
-    def __init__(self, llm_client, kb_pages, kb_embeddings, top_k=5):
+    def __init__(self, llm_client, search_fn, embed_fn = None, top_k=10):
+        """
+        search_fn: callable(query, top_k) -> list[metadata with 'text','doc_key','page' or section info, 'score']
+        embed_fn: optional embedding function (if needed elsewhere)
+        """
         self.llm = llm_client
-        self.pages = kb_pages
-        self.emb = kb_embeddings
+        self.search_fn = search_fn
+        self.embed_fn = embed_fn
         self.top_k = top_k
 
-    def retrieve_relevant_pages(self, question, embed_fn):
-        # embed_fn should return a 1d normalized vector for the question 
-        q_vec = embed_fn(question)
+    def retrieve_relevant_chunks(self, question, top_k=None):
+        top_k = top_k or self.top_k
+        results = self.search_fn(question, top_k=top_k)
 
-        emb_norm = self.emb / np.linalg.norm(self.emb, axis=1, keepdims=True)
-        sims = emb_norm @ q_vec
-
-        # Top k similarity indices
-        idx = sims.argsort()[-self.top_k:][::-1]
-        return [self.pages[i] for i in idx]
+        # Ensure expected keys exist — normalize to 'source' and 'page' or section_title
+        normalized = []
+        for r in results:
+            # r contains: doc_key, section_index, section_title, chunk_index, text, 
+            src = r.get("doc_key")
+            section_index = r.get("section_index")
+            chunk_index = r.get("chunk_index")
+            section_title = r.get("section_title")
+            normalized.append({"source": src, "section_index": section_index, "chunk_index": chunk_index, "section_title": section_title, "text": r.get("text",""), "score": r.get("score",0.0)})
+        return normalized
     
 
-    def handle(self, question, embed_fn, context=None):
-
-        # Build memory block if context provided
+    def handle(self, question, context=None):
         memory_block = f"{context}\n\n" if context else ""
-
-        retrieved = self.retrieve_relevant_pages(question, embed_fn)
-
-        context = "\n\n".join([f"Source: {p['source']} (Page {p['page']})\n{p['text']}" for p in retrieved])
+        retrieved = self.retrieve_relevant_chunks(question)
+        context_text = "\n\n".join([f"Source: {p['source']} (Section {p['section_index']}, Chunk {p['chunk_index']})\nSection Title: {p['section_title']}\n{p['text']}" for p in retrieved])
+        print(context_text)
 
         prompt = f"""
 You are an expert on immune-related adverse events (irAEs) from cancer immunotherapy.
-Use the following retrieved guideline exerpts AND general oncology knowledge where relevant to answer the question below.
+Use the following retrieved guideline exerpts to answer the question below.
+
 
 CRITICAL RULES:
 - DO NOT recreate guideline tables.
 - DO NOT use markdown tables or vertical bars (|).
 - DO NOT output multi-column layouts.
 - Write the answer as clean, concise clinical prose.
+- Cite sources in parentheses with source name only (ASCO), (ASCO;NCCN).
+- Every time information is used from the guidelines, cite the source.
+- If a user asks specifically about ASCO, SITC, or NCCN guidelines, prioritize answers from that guideline.
 - No HTML tags, no <br>, no <p>.
 - If the question is not relevant to irAEs or guidelines, respond with: "Sorry, I can only answer questions related to immune-related adverse events (irAEs) and their management."
 
 RETRIEVED GUIDELINES:
-{context}
+{context_text}
 
 QUESTION:
 {question}
@@ -52,14 +61,6 @@ CONVERSATION MEMORY (most recent message LAST): {memory_block}
 
 FINAL ANSWER (clean prose, no table formatting):
 """
-        # LLM client returns text response
         result = self.llm.generate(prompt)
-
         result = clean_text(result)
-
-        return {
-            "type": "text",
-            "code": None,
-            "data": result
-        }
-    
+        return {"type": "text", "code": None, "data": result}

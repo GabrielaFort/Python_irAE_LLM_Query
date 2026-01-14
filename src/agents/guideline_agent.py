@@ -29,13 +29,16 @@ class GuidelineAgent:
         return normalized
     
 
-    def handle(self, question, context=None):
-        memory_block = f"{context}\n\n" if context else ""
+    def handle(self, question, messages=None):
+        """Handle guideline questions with RAG and convo history"""
+        if messages is None:
+            messages = []
+
+        # Rag retrieval 
         retrieved = self.retrieve_relevant_chunks(question)
         context_text = "\n\n".join([f"Source: {p['source']} (Section {p['section_index']}, Chunk {p['chunk_index']})\nSection Title: {p['section_title']}\n{p['text']}" for p in retrieved])
-        print(context_text)
 
-        prompt = f"""
+        system_prompt = f"""
 You are an expert on immune-related adverse events (irAEs) from cancer immunotherapy.
 Use the following retrieved guideline exerpts to answer the user's question.
 
@@ -52,14 +55,19 @@ CRITICAL RULES:
 
 RETRIEVED GUIDELINES:
 {context_text}
-
-USER QUESTION:
-{question}
-
-CONVERSATION MEMORY (most recent message LAST): {memory_block}
-
-FINAL ANSWER (clean prose, no table formatting):
 """
-        result = self.llm.generate(prompt)
+        # Build messages for LLM
+        full_messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history
+        full_messages.extend(messages)
+
+        # Add current user question 
+        full_messages.append({"role": "user", "content": question})
+
+        result = self.llm.generate(messages=full_messages)
         result = clean_text(result)
+
+        print(full_messages)
+        
         return {"type": "text", "code": None, "data": result}

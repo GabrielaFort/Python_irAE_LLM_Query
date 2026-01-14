@@ -6,30 +6,31 @@ class QuestionClassifier:
     def __init__(self, llm_client):
         self.llm_client = llm_client
 
-    def classify(self, question, context=None):
+    def classify(self, question, messages=None):
+        
+        plot_keywords = ["plot", "graph", "chart", "histogram", "scatter", "volcano","heatmap", "piechart", "pie chart", "donut"]
+        stat_keywords = ["statistical", "correlation", "regression", "significant", "p-value", "anova", "t-test", "mann-whitney","wilcoxon","chi-square", "average","median","mean","standard deviation","confidence interval"]
+        query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all"]
+        guideline_keywords = ["guidelines", "management", "recommendations"]
+        question_lower = question.lower()
 
-        if not context:
-            plot_keywords = ["plot", "graph", "chart", "histogram", "scatter", "bar", "line", "box","volcano","heatmap", "piechart", "pie chart", "donut"]
-            stat_keywords = ["statistical", "correlation", "regression", "significant", "p-value", "anova", "t-test", "mann-whitney","wilcoxon","chi-square", "average","median","mean","standard deviation","confidence interval"]
-            query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all"]
-            guideline_keywords = ["guidelines", "management", "recommendations"]
-            question_lower = question.lower()
+        # Keyword-based detection
+        if any(word in question_lower for word in plot_keywords):
+            return "plot"
+        elif any(word in question_lower for word in stat_keywords):
+            return "stats"
+        elif any(word in question_lower for word in query_keywords):
+            return "tableqa"
+        elif any(word in question_lower for word in guideline_keywords):
+            return "guideline"
 
-            # Keyword-based detection
-            if any(word in question_lower for word in plot_keywords):
-                return "plot"
-            elif any(word in question_lower for word in stat_keywords):
-                return "stats"
-            elif any(word in question_lower for word in query_keywords):
-                return "tableqa"
-            elif any(word in question_lower for word in guideline_keywords):
-                return "guideline"
-            
-        # If no match, fall through to LLM classification
-        memory_block = f"{context}\n\n" if context else ""
 
         # Fallback to LLM classification
-        prompt = f"""
+
+        if messages is None:
+            messages = []
+
+        system_prompt = f"""
 You are a routing classifier. Your job is to identify what type of task the user's question represents.
 
 Classify the following question into ONE of these categories:
@@ -42,17 +43,26 @@ Classify the following question into ONE of these categories:
 RULES:
 - Return ONLY the category name: one of {'tableqa', 'stats', 'plot', 'guideline'}.
 - Do NOT explain your reasoning.
-
-Conversation Context (oldest first, newest last):
-{memory_block}
-
-QUESTION:
-{question}
         """
+
+        # Build messages for LLM
+        full_messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history
+        full_messages.extend(messages)
+
+        # Add current user question
+        full_messages.append({"role": "user", "content": question})
+
+        print(full_messages)
+        
             
-        classification = self.llm_client.generate(prompt).strip().lower()
+        classification = self.llm_client.generate(messages=full_messages).strip().lower()
+
         if classification in ["tableqa", "plot", "stats","guideline"]:
+            print(classification)
             return classification
+            
 
         # Default to 'tableqa' if unsure
         return "tableqa"

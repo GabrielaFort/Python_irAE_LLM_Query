@@ -201,31 +201,30 @@ def clean_text(text):
 # Function to build context for prompt using session history gathered through streamlit frontend session state
 def build_context(history, max_turns = 10):
     """
-    Build lightweight conversational memory for the LLM.
-    Use only user questions and generated code strings.
+    Build conversation history in ollamas message format.
+    Args:
+        history: list of conversation turns with question and code
+        max_turns: maximum number of recent turns to include
+
+    Returns:
+        List of message dicts for Ollama API
     """
-    if not history:
-        return ""
+    messages = []
     
-    recent = history[-max_turns:]
-
-    lines = ["Conversation History:"]
-
-    for h in recent:
-        user_question = h.get("question", "")
-        code_str = h.get("code", None)
-
-        if not code_str:
-            code_str = "No code generated."
-
-        lines.append(f"\nUser Asked: {user_question}")
-        lines.append("LLM generated this code:")
-        lines.append(code_str.strip())
-
-    return "\n".join(lines) + "\nEnd of Conversation History.\n"
-
-
-
+    # Only include the most recent turns
+    recent_history = history[-max_turns:] if len(history) > max_turns else history
+    
+    for turn in recent_history:
+        # Add user question
+        messages.append({"role": "user", 
+                         "content": turn.get("question", "")})
+        
+        # Add LLM generated code (assistant response)
+        if turn.get("code"):
+            messages.append({"role": "assistant", 
+                             "content": turn.get("code", "")})
+                    
+    return messages
 
 
 if __name__ == "__main__":

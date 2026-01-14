@@ -18,17 +18,19 @@ class PlotAgent:
     Handles visualization requests.
     Uses LLM to suggest a plotly plot based on dataset summary and user query.
     Returns a plotly figure object to display in streamlit frontend.
+    Uses conversation history for context
     """
     def __init__(self, df, llm_client):
         self.df = df
         self.llm_client = llm_client
 
-    def handle(self, question, df_summary, context=None):
+    def handle(self, question, df_summary, messages=None):
 
-        # Build memory block if context provided
-        memory_block = f"{context}\n\n" if context else ""
+        if messages is None:
+            messages = []
 
-        prompt = f"""
+        # Build system prompt
+        system_prompt = f"""
         You are a python plotting assistant.
         Given the dataframe summary below, write Python code using using plotly to create an informative, interactive plot that answers the user's question. 
         
@@ -61,15 +63,22 @@ class PlotAgent:
         - Output **only** executable Python code — no markdown, comments, or explanations.
 
         {df_summary}
-
-        Question: "{question}"
-
-        Conversation Memory (most recent message LAST): {memory_block}
         """
 
+        # Build messages for LLM
+        full_messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history
+        full_messages.extend(messages)
+
+        # Add current user question 
+        full_messages.append({"role": "user", "content": question})
+
         # Generate and clean up code
-        code = self.llm_client.generate(prompt).strip()
+        code = self.llm_client.generate(messages=full_messages)
         code = clean_code(code)
+
+        print(full_messages)
 
         return code
     

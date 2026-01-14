@@ -11,17 +11,19 @@ class StatsAgent:
     Handles statistical analysis requests. 
     Uses LLM to suggest statistical tests in python code based on dataset sumary and user question.
     Returns a tabular or numeric result.
+    Uses conversation history for context
     """
 
     def __init__(self, df, llm_client):
         self.df = df
         self.llm_client = llm_client
 
-    def handle(self, question, df_summary, context=None):
+    def handle(self, question, df_summary, messages=None):
 
-        memory_block = f"{context}\n\n" if context else ""
+        if messages is None:
+            messages = []
 
-        prompt = f"""
+        system_prompt = f"""
         You are a python statistical analysis assistant.
         Given the dataframe summary below, generate **only executable Python code** that answers the user's statistical question.
 
@@ -64,15 +66,22 @@ class StatsAgent:
         - Output **only** executable Python code — no markdown, comments, or explanations.
 
         {df_summary}
-
-        Question: "{question}"
-
-        Conversation Memory (most recent message LAST): {memory_block}
         """
 
+        # Build messages for LLM
+        full_messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history
+        full_messages.extend(messages)
+
+        # Add current user question 
+        full_messages.append({"role": "user", "content": question})
+
         # Generate and clean up code
-        code = self.llm_client.generate(prompt)
+        code = self.llm_client.generate(messages=full_messages)
         code = clean_code(code)
+
+        print(full_messages)
 
         return code
 

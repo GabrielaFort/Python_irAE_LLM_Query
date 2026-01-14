@@ -37,9 +37,21 @@ class Manager:
         self.df_summary = summarize_dataframe(df)
 
     def process_question(self, question, context=None):
+        """
+        Process a user question with conversation history.
+
+        Args:
+            question (str): The user's question.
+            context: List of message dicts from conversation history.
+        
+        Returns:
+            dict: with result type, data, and code.
+        """
+        if context is None:
+            context = []
+
         # Classify the question
-        qtype = self.classifier.classify(question, context=context)
-        print(qtype)
+        qtype = self.classifier.classify(question, messages=context)
 
         if qtype == "tableqa":
             agent = self.query_agent
@@ -48,7 +60,7 @@ class Manager:
         elif qtype == "stats":
             agent = self.stats_agent
         elif qtype == "guideline":
-            return self.guideline_agent.handle(question, context=context)
+            return self.guideline_agent.handle(question, messages=context)
         else:
             return({"type": "text",
                       "code": None,
@@ -56,7 +68,7 @@ class Manager:
         
         # Try to handle the question with the selected agent
         try:
-            code = agent.handle(question, self.df_summary, context=context)
+            code = agent.handle(question, self.df_summary, messages=context)
             result = agent.execute_code(code)
             
             if result["type"] == "error":

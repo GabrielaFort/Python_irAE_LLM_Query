@@ -23,7 +23,7 @@ CHUNK_OVERLAP = 250
 # This is documented here: https://github.com/pymupdf/pymupdf4llm
 def extract_markdown(pdf_path, header=False, footer=False):
         document = pymupdf.open(pdf_path)
-        md = pymupdf4llm.to_markdown(document, header=header, footer=footer)
+        md = pymupdf4llm.to_markdown(document, header=header, footer=footer, use_ocr = True)
         return md
 
 # Patterns to identify reference sections
@@ -92,7 +92,7 @@ def build_kb():
 
     for source, path in PDFS.items():
         print("Processing", source, path)
-        md = extract_markdown(path)
+        md = extract_markdown(path) 
         md = strip_reference_sections(md)
         doc_basename = os.path.basename(path)
         sections = split_into_sections(md, doc_basename)

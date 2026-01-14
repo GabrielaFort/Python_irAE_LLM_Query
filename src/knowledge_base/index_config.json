@@ -1,0 +1,1 @@
+{"model_name": "NeuML/pubmedbert-base-embeddings", "embed_dim": 768, "chunk_size": 2000, "chunk_overlap": 250}

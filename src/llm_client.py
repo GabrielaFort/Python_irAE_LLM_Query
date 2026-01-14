@@ -9,9 +9,10 @@ class LLMClient:
         self.api_key = api_key
 
 
-    def generate(self, prompt):
+    def generate(self, messages):
         """
         Use Ollama API format
+        args - messages: list of message dicts with 'role' and 'content' keys
         """
         headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -19,7 +20,7 @@ class LLMClient:
             }
         payload = {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "temperature": self.temperature,
             "stream": False
         }
@@ -33,7 +34,6 @@ class LLMClient:
         else:
             raise ValueError(f"Unexpected response: {content}")
         
-
 
 if __name__ == "__main__":    # Example usage
     import os

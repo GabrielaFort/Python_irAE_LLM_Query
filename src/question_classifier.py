@@ -11,7 +11,7 @@ class QuestionClassifier:
         if not context:
             plot_keywords = ["plot", "graph", "chart", "histogram", "scatter", "bar", "line", "box","volcano","heatmap", "piechart", "pie chart", "donut"]
             stat_keywords = ["statistical", "correlation", "regression", "significant", "p-value", "anova", "t-test", "mann-whitney","wilcoxon","chi-square", "average","median","mean","standard deviation","confidence interval"]
-            query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all","retrieve"]
+            query_keywords = ["how many", "number of", "what is the total", "total number of", "list all","list unique","find all"]
             guideline_keywords = ["guidelines", "management", "recommendations"]
             question_lower = question.lower()
 

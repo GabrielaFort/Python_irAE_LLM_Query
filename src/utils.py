@@ -225,17 +225,7 @@ def build_context(history, max_turns = 10):
     return "\n".join(lines) + "\nEnd of Conversation History.\n"
 
 
-# Function to load the knowledge base (pages and embeddings)
-def load_kb(KB_DIR="src/knowledge_base"):
-    pages_path = os.path.join(KB_DIR, "pages.json")
-    emb_path = os.path.join(KB_DIR, "embeddings.npy")
 
-    with open(pages_path) as f:
-        pages = json.load(f)
-
-    embeddings = np.load(emb_path)
-
-    return pages, embeddings
 
 
 if __name__ == "__main__":

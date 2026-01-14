@@ -2,8 +2,9 @@
 # It uses the QuestionClassifier to determine the type of question
 
 from src.question_classifier import QuestionClassifier
-from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, guideline_llm, summarize_dataframe, load_kb
+from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, guideline_llm, summarize_dataframe
 from src.agents import QueryAgent, PlotAgent, StatsAgent, ErrorAgent, GuidelineAgent
+from src.index_manager import IndexManager
 import traceback
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -12,27 +13,24 @@ class Manager:
     def __init__(self,df):
         self.df = df
 
-        # Load knowledge base for GuidelineAgent
-        # Load KB once
-        kb_pages, kb_emb = load_kb()
+        # Initialize IndexManager and load index + metas
+        self.index_manager = IndexManager(kb_dir="src/knowledge_base", model_name="NeuML/pubmedbert-base-embeddings")
+        try:
+            self.index_manager.load()
+        except FileNotFoundError:
+            raise RuntimeError("Knowledge base not found. Run build_pdf_kb.py to build the index.")
 
-        # Load embedding model once
-        self.embed_model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
-
-        # Embedding function 
-        def embed_fn(text):
-            vec = self.embed_model.encode(text, convert_to_numpy=True)
-            vec = vec / np.linalg.norm(vec)
-            return vec
-        
-        self.embed_fn = embed_fn
+        # export search_fn and embed_fn
+        self.search_fn = self.index_manager.search
+        self.embed_fn = self.index_manager.embed_fn
 
         # Instantiate LLM clients for classifier and agents
         self.classifier = QuestionClassifier(question_classifier_llm())
         self.query_agent = QueryAgent(df,query_llm())
         self.plot_agent = PlotAgent(df,plotter_llm())
         self.stats_agent = StatsAgent(df,stats_llm())
-        self.guideline_agent = GuidelineAgent(guideline_llm(), kb_pages, kb_emb)
+        # Pass search_fn (and optionally embed_fn) to GuidelineAgent
+        self.guideline_agent = GuidelineAgent(guideline_llm(), search_fn=self.search_fn, embed_fn=self.embed_fn)
         self.error_agent = ErrorAgent(error_checker_llm())
 
         # Summarize the dataframe - will need every time we instantiate this class
@@ -41,6 +39,7 @@ class Manager:
     def process_question(self, question, context=None):
         # Classify the question
         qtype = self.classifier.classify(question, context=context)
+        print(qtype)
 
         if qtype == "tableqa":
             agent = self.query_agent
@@ -49,7 +48,7 @@ class Manager:
         elif qtype == "stats":
             agent = self.stats_agent
         elif qtype == "guideline":
-            return self.guideline_agent.handle(question, self.embed_fn, context=context)
+            return self.guideline_agent.handle(question, context=context)
         else:
             return({"type": "text",
                       "code": None,

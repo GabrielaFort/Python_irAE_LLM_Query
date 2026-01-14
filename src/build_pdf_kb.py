@@ -9,16 +9,15 @@ import pymupdf4llm
 import re
 
 PDFS = {
-    "SITC": "../data/SITC_guidelines.pdf",
-    "NCCN": "../data/NCCN_guidelines.pdf",
-    "ASCO": "../data/ASCO_guidelines.pdf"
+    "SITC": "./knowledge_base/SITC_guidelines.pdf",
+    "NCCN": "./knowledge_base/NCCN_guidelines.pdf",
+    "ASCO": "./knowledge_base/ASCO_guidelines.pdf"
 }
 
 MODEL_NAME = "NeuML/pubmedbert-base-embeddings" # sbert style pubmedbert fine tuned for sentence embeddings
 OUTPUT_DIR = "./knowledge_base"   # match your utils.load_kb default "src/knowledge_base"
 CHUNK_SIZE = 2000
 CHUNK_OVERLAP = 250
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Utilize pymupdf4llm to extract markdown from each pdf
 # This is documented here: https://github.com/pymupdf/pymupdf4llm
@@ -117,7 +116,7 @@ def build_kb():
                     f"{c}"
                 )
                 texts.append(embed_text)  
-                  
+
     print(f"Total chunks: {len(texts)}")
 
     print("Embedding chunks...")

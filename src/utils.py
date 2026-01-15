@@ -51,6 +51,13 @@ def guideline_llm():
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
+def explanation_llm():
+    myllm = LLMClient(model="glm-4.6:cloud",
+                api_url="https://ollama.com",
+                temperature=0.1,
+                api_key=os.getenv("OLLAMA_API_KEY"))
+    return myllm
+
 
 # Function to load and clean the irAE dataset
 def load_data():

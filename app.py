@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 from src.manager import Manager
+from src.agents.explanation_agent import ExplanationAgent
 import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utils import load_data, build_context
+from src.utils import load_data, build_context, explanation_llm 
 from matplotlib_venn._common import VennDiagram
 import urllib.parse
 import re
@@ -66,6 +67,9 @@ if "history" not in st.session_state:
 
 if "last_result" not in st.session_state:
     st.session_state["last_result"] = None
+
+if "last_explanation" not in st.session_state:
+    st.session_state["last_explanation"] = None
 
 if "pending_question" not in st.session_state:
     st.session_state["pending_question"] = None
@@ -186,6 +190,9 @@ df = load_data()
 # Instantiate manager class
 m = Manager(df)
 
+# Instantiate ExplanationAgent
+explanation_agent = ExplanationAgent(explanation_llm())
+
 # Setup app layout 
 st.title("irAE Dataset LLM Assistant")
 
@@ -265,6 +272,7 @@ if st.button("Reset Conversation"):
     st.session_state["history"] = []
     st.session_state["last_result"] = None
     st.session_state["pending_question"] = "" 
+    st.session_state["last_explanation"] = None
     st.rerun()
 
 # Handle rerun logic
@@ -281,6 +289,16 @@ if st.session_state["rerun_query"]:
     # Add to history immediately 
     code_str = result.get("code") if isinstance(result, dict) else None
     st.session_state["history"].append({"question": question, "code": code_str})
+
+    explanation = None
+    if code_str and result.get("type") != "error":
+        # Rebuild context including latest run
+        updated_context = build_context(st.session_state["history"], max_turns=10)
+        explanation = explanation_agent.generate_explanation(updated_context)
+        st.session_state["last_explanation"] = explanation
+    
+    else:
+        st.session_state["last_explanation"] = None
 
     st.session_state["last_result"] = result
     st.rerun()  
@@ -304,6 +322,17 @@ if submitted and question:
             "question": question,
             "code": code_str
         })
+    
+    # Generate explanation if code was generated
+    if code_str and result.get("type") != "error":
+        # Rebuild context including the latest turn
+        updated_context = build_context(st.session_state["history"], max_turns=10)
+
+        explanation = explanation_agent.generate_explanation(updated_context)
+        st.session_state["last_explanation"] = explanation
+
+    else:
+        st.session_state["last_explanation"] = None
 
 # If no new result but session has history, keep showing the last full result
 if result is None:
@@ -319,7 +348,11 @@ if result is not None:
     res_data = result.get('data')
     res_code = result.get('code')
 
+    # Get explanation from session state
+    explanation = st.session_state.get("last_explanation", None)
+
     code_text = None
+
     if res_code:
         code_text = str(res_code)
 
@@ -331,6 +364,10 @@ if result is not None:
         tab_code = None
 
     with tab_result:
+
+        # Display explanation if available
+        if explanation:
+            st.info(f"💡 {explanation}")
 
         # For plotly plots
         if res_type == "plotly" and isinstance(res_data, go.Figure):

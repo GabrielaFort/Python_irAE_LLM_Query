@@ -52,17 +52,12 @@ RULES:
         full_messages.extend(messages)
 
         # Add current user question
-        full_messages.append({"role": "user", "content": question})
-
-        print(full_messages)
-        
+        full_messages.append({"role": "user", "content": question})        
             
         classification = self.llm_client.generate(messages=full_messages).strip().lower()
 
         if classification in ["tableqa", "plot", "stats","guideline"]:
-            print(classification)
             return classification
-            
 
         # Default to 'tableqa' if unsure
         return "tableqa"

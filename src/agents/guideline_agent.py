@@ -67,7 +67,5 @@ RETRIEVED GUIDELINES:
 
         result = self.llm.generate(messages=full_messages)
         result = clean_text(result)
-
-        print(full_messages)
         
         return {"type": "text", "code": None, "data": result}

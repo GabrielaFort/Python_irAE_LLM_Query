@@ -37,6 +37,4 @@ Dataframe Summary:
         corrected_code = self.llm_client.generate(messages=messages)
         corrected_code = clean_code(corrected_code)
 
-        print(messages)
-
         return corrected_code

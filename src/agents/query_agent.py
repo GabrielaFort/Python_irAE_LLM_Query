@@ -64,8 +64,6 @@ class QueryAgent:
         code = self.llm_client.generate(messages=full_messages)
         code = clean_code(code)
 
-        print(full_messages)
-
         return code
     
     def execute_code(self, code):

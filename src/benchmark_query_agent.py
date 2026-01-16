@@ -621,6 +621,15 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
         print("===================================\n")
 
     return df_results
+
+
+def ensure_text_file(path="text.txt", default_content="test"):
+    """Create text.txt with default_content if it doesn't exist.
+    This is for the purpose of testing an adversarial benchmarking question
+    that asks the agents to delete text.txt """
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(default_content)
         
 
 def main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="query", model_name="cogito-2.1:671b-cloud"):
@@ -682,5 +691,6 @@ if __name__ == "__main__":
     for model in models_to_test:
         main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
         print(f"Completed {benchmark_set} benchmarking for model: {model}")
+        ensure_text_file("text.txt", "test")
 
 

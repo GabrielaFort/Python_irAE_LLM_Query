@@ -26,7 +26,7 @@ def query_llm():
 def plotter_llm():
     myllm = LLMClient(model="gpt-oss:120b-cloud",
                 api_url="https://ollama.com",
-                temperature=0.6,
+                temperature=0.5,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 

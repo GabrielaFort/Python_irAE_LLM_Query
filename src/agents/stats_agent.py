@@ -44,6 +44,7 @@ class StatsAgent:
             Always explode **within the same DataFrame** before grouping.
         - Always drop rows containing NA values *only for the variables used in the test*. Do not treat NAs as 0 or impute them.
         - For correlation tests, ensure both vectors have equal length after NA removal.
+        - Ensure all column names are unique to avoid errors.
 
         **Output**
         - For any statistical test including t-test, Mann–Whitney, chi-square, ANOVA, Kruskal–Wallis, correlations:

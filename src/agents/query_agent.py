@@ -42,6 +42,7 @@ class QueryAgent:
         - Unless explicitly instructed otherwise, always prefer returning a DataFrame that preserves the full schema of the original data (same column names, same order) — especially for
           filtering or lookup-style questions.
         - For counts/comparisons, group logically and use '.nunique()' where appropriate.
+        - Ensure all column names are unique to avoid errors.
         - Return:
             - a DataFrame subset/summary that answers the question, **or**
             - a single numeric/scalar value if suitable.

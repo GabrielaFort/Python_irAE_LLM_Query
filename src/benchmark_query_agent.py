@@ -51,12 +51,15 @@ def normalize_dataframe(df, context="filtering", atol=0.01):
     return df.fillna("__NA__")
 
 
-def filtering_eval(gold_result, llm_result, atol=0.01):
+def dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01):
     """
-    Evaluate 'filtering' outputs (subset-style DataFrames).
-    Requires identical rows (ignoring order) and same set of columns.
-    Numeric quantization absorbs float/int differences.
-    1-column outputs are name-tolerant.
+    Unified evaluation for filtering and grouping outputs.
+    
+    Args:
+        gold_result: Expected result
+        llm_result: LLM-generated result
+        eval_type: "filtering" or "grouping"
+        atol: Absolute tolerance for numeric comparison
     """
     def to_df(x):
         if isinstance(x, pd.DataFrame): return x.copy()
@@ -68,7 +71,7 @@ def filtering_eval(gold_result, llm_result, atol=0.01):
     gold.columns = [str(c).strip().lower() for c in gold.columns]
     llm.columns = [str(c).strip().lower() for c in llm.columns]
 
-    # Align columns if both are single-column or same set
+    # Column alignment
     if set(gold.columns) != set(llm.columns):
         if gold.shape[1] == 1 and llm.shape[1] == 1:
             llm.columns = gold.columns
@@ -76,75 +79,135 @@ def filtering_eval(gold_result, llm_result, atol=0.01):
             return 0
     llm = llm[gold.columns]
 
-    gold_s = normalize_dataframe(gold, "filtering", atol)
-    llm_s  = normalize_dataframe(llm,  "filtering", atol)
+    # Normalize based on eval type
+    context = "filtering" if eval_type == "filtering" else "grouping"
+    gold_s = normalize_dataframe(gold, context, atol)
+    llm_s = normalize_dataframe(llm, context, atol)
 
     if gold_s.shape != llm_s.shape:
         return 0
 
-    # Row-agnostic comparison
+    # Sort for row-agnostic comparison
     sort_cols = sorted(gold_s.columns)
-
     gold_sorted = gold_s.sort_values(by=sort_cols).reset_index(drop=True)
-    llm_sorted  = llm_s.sort_values(by=sort_cols).reset_index(drop=True)
+    llm_sorted = llm_s.sort_values(by=sort_cols).reset_index(drop=True)
 
-    return int(gold_sorted.equals(llm_sorted))
+    # Different comparison logic based on type
+    if eval_type == "filtering":
+        return int(gold_sorted.equals(llm_sorted))
+    
+    else:  # grouping
+        num_cols = gold_sorted.select_dtypes(include=[np.number]).columns
+        for c in num_cols:
+            g = pd.to_numeric(gold_sorted[c], errors="coerce")
+            l = pd.to_numeric(llm_sorted[c], errors="coerce")
+            g_rounded = g.round(2)
+            l_rounded = l.round(2)
+            if not np.allclose(g_rounded, l_rounded, atol=max(atol, 0.5), equal_nan=True):
+                return 0
+
+        text_cols = [c for c in gold_sorted.columns if c not in num_cols]
+        for c in text_cols:
+            if not gold_sorted[c].fillna("").equals(llm_sorted[c].fillna("")):
+                return 0
+        return 1
 
 
-def grouping_eval(gold_result, llm_result, atol=0.1):
-    """
-    Evaluate 'grouping' outputs (aggregated summaries).
-    Requires same columns & row count.
-    Allows rounding/float precision differences.
-    Compares after row sorting and numeric tolerance.
-    """
-    def to_df(x):
-        if isinstance(x, pd.DataFrame): return x.copy()
-        if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
-        if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
-        return pd.DataFrame({"value": [x]})
 
-    gold, llm = to_df(gold_result), to_df(llm_result)
-    gold.columns = [str(c).strip().lower() for c in gold.columns]
-    llm.columns  = [str(c).strip().lower() for c in llm.columns]
+# def filtering_eval(gold_result, llm_result, atol=0.01):
+#     """
+#     Evaluate 'filtering' outputs (subset-style DataFrames).
+#     Requires identical rows (ignoring order) and same set of columns.
+#     Numeric quantization absorbs float/int differences.
+#     1-column outputs are name-tolerant.
+#     """
+#     def to_df(x):
+#         if isinstance(x, pd.DataFrame): return x.copy()
+#         if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
+#         if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
+#         return pd.DataFrame({"value": [x]})
 
-    if set(gold.columns) != set(llm.columns):
-        if gold.shape[1] == 1 and llm.shape[1] == 1:
-            llm.columns = gold.columns
-        else:
-            return 0
-    llm = llm[gold.columns]
+#     gold, llm = to_df(gold_result), to_df(llm_result)
+#     gold.columns = [str(c).strip().lower() for c in gold.columns]
+#     llm.columns = [str(c).strip().lower() for c in llm.columns]
 
-    gold_s = normalize_dataframe(gold, "grouping", atol)
-    llm_s  = normalize_dataframe(llm,  "grouping", atol)
+#     # Align columns if both are single-column or same set
+#     if set(gold.columns) != set(llm.columns):
+#         if gold.shape[1] == 1 and llm.shape[1] == 1:
+#             llm.columns = gold.columns
+#         else:
+#             return 0
+#     llm = llm[gold.columns]
 
-    if gold_s.shape != llm_s.shape:
-        return 0
+#     gold_s = normalize_dataframe(gold, "filtering", atol)
+#     llm_s  = normalize_dataframe(llm,  "filtering", atol)
 
-    # Sort both for row-agnostic comparison
-    sort_cols = list(gold_s.columns)
-    gold_s, llm_s = gold_s.sort_values(by=sort_cols).reset_index(drop=True), llm_s.sort_values(by=sort_cols).reset_index(drop=True)
+#     if gold_s.shape != llm_s.shape:
+#         return 0
 
-    num_cols = gold_s.select_dtypes(include=[np.number]).columns
+#     # Row-agnostic comparison
+#     sort_cols = sorted(gold_s.columns)
 
-    for c in num_cols:
-        g = pd.to_numeric(gold_s[c], errors="coerce")
-        l = pd.to_numeric(llm_s[c], errors="coerce")
+#     gold_sorted = gold_s.sort_values(by=sort_cols).reset_index(drop=True)
+#     llm_sorted  = llm_s.sort_values(by=sort_cols).reset_index(drop=True)
 
-        # Round both sides to a consistent precision (e.g., 2 decimals)
-        g_rounded = g.round(2)
-        l_rounded = l.round(2)
+#     return int(gold_sorted.equals(llm_sorted))
 
-        # Compare with a generous tolerance
-        if not np.allclose(g_rounded, l_rounded, atol=max(atol, 0.5), equal_nan=True):
-            return 0
 
-    text_cols = [c for c in gold_s.columns if c not in num_cols]
-    for c in text_cols:
-        if not gold_s[c].fillna("").equals(llm_s[c].fillna("")):
-            return 0
+# def grouping_eval(gold_result, llm_result, atol=0.1):
+#     """
+#     Evaluate 'grouping' outputs (aggregated summaries).
+#     Requires same columns & row count.
+#     Allows rounding/float precision differences.
+#     Compares after row sorting and numeric tolerance.
+#     """
+#     def to_df(x):
+#         if isinstance(x, pd.DataFrame): return x.copy()
+#         if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
+#         if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
+#         return pd.DataFrame({"value": [x]})
 
-    return 1
+#     gold, llm = to_df(gold_result), to_df(llm_result)
+#     gold.columns = [str(c).strip().lower() for c in gold.columns]
+#     llm.columns  = [str(c).strip().lower() for c in llm.columns]
+
+#     if set(gold.columns) != set(llm.columns):
+#         if gold.shape[1] == 1 and llm.shape[1] == 1:
+#             llm.columns = gold.columns
+#         else:
+#             return 0
+#     llm = llm[gold.columns]
+
+#     gold_s = normalize_dataframe(gold, "grouping", atol)
+#     llm_s  = normalize_dataframe(llm,  "grouping", atol)
+
+#     if gold_s.shape != llm_s.shape:
+#         return 0
+
+#     # Sort both for row-agnostic comparison
+#     sort_cols = list(gold_s.columns)
+#     gold_s, llm_s = gold_s.sort_values(by=sort_cols).reset_index(drop=True), llm_s.sort_values(by=sort_cols).reset_index(drop=True)
+
+#     num_cols = gold_s.select_dtypes(include=[np.number]).columns
+
+#     for c in num_cols:
+#         g = pd.to_numeric(gold_s[c], errors="coerce")
+#         l = pd.to_numeric(llm_s[c], errors="coerce")
+
+#         # Round both sides to a consistent precision (e.g., 2 decimals)
+#         g_rounded = g.round(2)
+#         l_rounded = l.round(2)
+
+#         # Compare with a generous tolerance
+#         if not np.allclose(g_rounded, l_rounded, atol=max(atol, 0.5), equal_nan=True):
+#             return 0
+
+#     text_cols = [c for c in gold_s.columns if c not in num_cols]
+#     for c in text_cols:
+#         if not gold_s[c].fillna("").equals(llm_s[c].fillna("")):
+#             return 0
+
+#     return 1
 
 
 def count_eval(gold_result, llm_result):
@@ -501,11 +564,11 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
 
         # Evaluate based on eval_type
         if eval_type == "filtering":
-            score = filtering_eval(gold_result, llm_result)
+            score = dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01)
         elif eval_type == "grouping":
-            score = grouping_eval(gold_result, llm_result)
+            score = dataframe_eval(gold_result, llm_result, eval_type="grouping", atol=0.1)
         elif eval_type == "ranking":
-            score = grouping_eval(gold_result, llm_result)
+            score = dataframe_eval(gold_result, llm_result, eval_type="grouping", atol=0.1)
         elif eval_type == "count":
             score = count_eval(gold_result, llm_result)
         elif eval_type == "invalid":
@@ -560,11 +623,33 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
     return df_results
         
 
-# Example usage
-if __name__ == "__main__":
-    file_path = "data/benchmark_questions_111025.xlsx"
-    sheet_name = "plotting_benchmark"
-    df = pd.read_excel(file_path, sheet_name=sheet_name)
+def main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="query", model_name="cogito-2.1:671b-cloud"):
+    '''
+    Main function to run benchmark n times on a set of cases.
+    Save each run's results to a separate sheet of an Excel file.
+    So, each model will have its own Excel file with multiple sheets.
+    Args:
+        n: number of benchmark runs
+        benchmark_path: path to Excel file with benchmark cases
+        benchmark: which benchmark sheet to use ("query", "stats", "plot")
+        model_name: LLM model to test
+    '''
+    # Load benchmark cases from Excel
+    if benchmark == "query":
+        sname = "table_qa_benchmark"
+        agent = "query"
+        temp = 0.0
+    elif benchmark == "stats":
+        sname = "statistics_benchmark"
+        agent = "stats"
+        temp = 0.1
+    elif benchmark == "plot":
+        sname = "plotting_benchmark"
+        agent = "plot"
+        temp = 0.5
+
+    # Read in set of benchmark cases
+    df = pd.read_excel(benchmark_path, sheet_name=sname)
 
     df.columns = [c.strip().lower().replace(" ","_") for c in df.columns]
 
@@ -578,22 +663,24 @@ if __name__ == "__main__":
         }
         benchmark_cases.append(case)
 
-    # Run benchmark agent for input model 
-    model = "cogito-2.1:671b-cloud"
+    # Run benchmark agent n times and save to Excel
+    with pd.ExcelWriter(f"results_new/benchmark_{benchmark}_results_{model_name.replace(':','_')}.xlsx") as writer:
+        for i in range(n):
+            print(f"Starting benchmark run {i+1}/{n} for model {model_name}...")
+            results = benchmark_agent(benchmark_cases, model_name, agent, temp)
+            results.to_excel(writer, sheet_name=f"run_{i+1}", index=False)
+            print(f"Completed run {i+1}/{n}.\n")
+        
 
-    if sheet_name == "table_qa_benchmark":
-        agent = "query"
-        temp = 0.0
-    elif sheet_name == "statistics_benchmark":
-        agent = "stats"
-        temp = 0.1
-    elif sheet_name == "plotting_benchmark":
-        agent = "plot"
-        temp = 0.5
+# Example usage
+if __name__ == "__main__":
+    models_to_test = ["nemotron-3-nano:30b-cloud","devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
+                      "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","qwen3-next:80b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
+                      "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
+    benchmark_set = "query"
 
-    results = benchmark_agent(benchmark_cases, model, agent, temp)
-    results.to_csv(f"data/benchmark_{agent}_results_{model}.csv", index=False)
-    
-
+    for model in models_to_test:
+        main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
+        print(f"Completed {benchmark_set} benchmarking for model: {model}")
 
 

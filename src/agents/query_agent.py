@@ -43,7 +43,9 @@ class QueryAgent:
           filtering or lookup-style questions.
         - For counts/comparisons, group logically and use '.nunique()' where appropriate.
         - Ensure all column names are unique to avoid errors.
-        - Return:
+        - **SAFETY**: Never include code that writes to disk or removes files, accesses the network, or executes system commands.
+
+        **Output**
             - a DataFrame subset/summary that answers the question, **or**
             - a single numeric/scalar value if suitable.
         - If unanswerable from schema, assign a short explanatory string to 'result'.

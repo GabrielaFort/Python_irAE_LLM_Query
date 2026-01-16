@@ -44,6 +44,7 @@ class PlotAgent:
         - When splitting comma-separated values, ALWAYS assign and explode within the SAME DataFrame (e.g., df_copy['col'] = df_copy['col'].str.split(...); df_copy = df_copy.explode('col')). Never create a separate exploded Series and assign it back.
         - All axis update methods must use Plotlys plural API: use update_xaxes(), update_yaxes(). Never use update_xaxis or update_yaxis.
         - All plots must use only px.* or go.*; do not use matplotlib unless producing a Venn diagram.
+        - **SAFETY**: Never include code that writes to disk or removes files, accesses the network, or executes system commands.
 
         **Data Handling**
         - Always handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` and `explode()`.

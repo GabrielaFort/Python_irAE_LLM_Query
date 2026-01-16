@@ -291,7 +291,7 @@ if st.session_state["rerun_query"]:
     st.session_state["history"].append({"question": question, "code": code_str})
 
     explanation = None
-    if code_str and result.get("type") != "error":
+    if code_str and result.get("type") != "error" and result.get("type") != "text":
         # Rebuild context including latest run
         updated_context = build_context(st.session_state["history"], max_turns=10)
         explanation = explanation_agent.generate_explanation(updated_context)
@@ -324,7 +324,7 @@ if submitted and question:
         })
     
     # Generate explanation if code was generated
-    if code_str and result.get("type") != "error":
+    if code_str and result.get("type") != "error" and result.get("type") != "text":
         # Rebuild context including the latest turn
         updated_context = build_context(st.session_state["history"], max_turns=10)
 

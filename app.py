@@ -420,7 +420,7 @@ if st.session_state["history"]:
         col_q, col_btn = st.columns([4,1])
 
         with col_q:
-            st.markdown(f"**Q{i}: {turn['question']}**")
+            st.write(f"Q{i}: {turn['question']}")
 
         with col_btn:
             if st.button("Rerun", key=f"rerun_{i}", help="Rerun this query", width='stretch'):

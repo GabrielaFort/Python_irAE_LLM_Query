@@ -28,24 +28,42 @@ def normalize_dataframe(df, context="filtering", atol=0.01):
     - Convert numeric-looking strings to float
     - Quantize or round numerics for tolerance
     - Replace missing with __NA__
+    Robust to cases where df[col] returns a DataFrame (squeezes single-col frames
+    or stringifies multi-col frames).
     """
     df = df.copy()
 
     for c in df.columns:
         s = df[c]
-        if s.dtype == object:
+
+        # If column entry is a DataFrame (rare), try to reduce to a Series
+        if isinstance(s, pd.DataFrame):
+            # If single-column DataFrame, squeeze to Series
+            if s.shape[1] == 1:
+                s = s.iloc[:, 0]
+            else:
+                # Multi-column: stringify each row into a single string so it can be compared
+                s = s.astype(str).apply(lambda row: " | ".join(row.values.astype(str)), axis=1)
+
+        # Now s should be a Series. If it's not, coerce to string Series.
+        if not isinstance(s, pd.Series):
+            s = pd.Series(s)
+
+        # Handle object-type text columns
+        if pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
             s = s.astype(str).str.strip().str.lower().str.replace("%", "", regex=False)
             s = s.replace({"nan": np.nan, "none": np.nan})
 
         # Try to coerce to float where possible
         s_num = pd.to_numeric(s, errors="coerce")
         if s_num.notna().sum() > 0:
-            s=s_num.astype(float)
+            s = s_num.astype(float)
 
             if context == "filtering":
                 s = np.round(s / atol) * atol
             elif context == "grouping":
                 s = s.round(6)
+
         df[c] = s
 
     return df.fillna("__NA__")
@@ -458,7 +476,18 @@ def run_agent(question,model,agent,temp):
         agent = PlotAgent(df, myllm)
     
     # Generate code for question and summary
+    max_attempts = 3
+    for attempt in range(1, max_attempts+1):
+        try:
+            code = agent.handle(question, summary)
+            break
+        except RuntimeError as e:  # or requests.exceptions.RequestException
+            print(f"LLM call failed (attempt {attempt}/{max_attempts}): {e}")
+            if attempt == max_attempts:
+                raise
+            time.sleep(2 ** attempt)  # exponential backoff
     code = agent.handle(question, summary)
+
     # Execute code
     result = agent.execute_code(code)
 
@@ -528,7 +557,7 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
 
         print(f"Processing question: {question}")
 
-        # Run query agent
+        # Run agent
         llm_result_dict = run_agent(question, model, agent, temp)
         llm_result = llm_result_dict.get('data', None)
         llm_type = llm_result_dict.get('type', None)
@@ -543,7 +572,6 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
             "gold_code": gold_code,
             "llm_result_preview": str(llm_result)[:200],
             "gold_result_preview":""})
-            #time.sleep(2)
             continue
 
         # Run gold code
@@ -556,7 +584,6 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
             "gold_code": gold_code,
             "llm_result_preview": str(llm_result)[:200],
             "gold_result_preview":""})
-            #time.sleep(2)
             continue
 
         gold_result = gold_result_dict.get("result", None)
@@ -610,7 +637,7 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
                 "gold_result_preview": str(gold_result)[:200]
             })
 
-        #time.sleep(2) # Pause between requests to avoid rate limits
+        time.sleep(2) # Pause between requests to avoid rate limits
 
     # Make final df with results
     df_results = pd.DataFrame(results)
@@ -632,7 +659,7 @@ def ensure_text_file(path="text.txt", default_content="test"):
             f.write(default_content)
         
 
-def main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="query", model_name="cogito-2.1:671b-cloud"):
+def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="query", model_name="cogito-2.1:671b-cloud"):
     '''
     Main function to run benchmark n times on a set of cases.
     Save each run's results to a separate sheet of an Excel file.
@@ -673,24 +700,26 @@ def main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=
         benchmark_cases.append(case)
 
     # Run benchmark agent n times and save to Excel
-    with pd.ExcelWriter(f"results_new/benchmark_{benchmark}_results_{model_name.replace(':','_')}.xlsx") as writer:
+    with pd.ExcelWriter(f"results/benchmark_{benchmark}_results_{model_name.replace(':','_')}.xlsx") as writer:
         for i in range(n):
             print(f"Starting benchmark run {i+1}/{n} for model {model_name}...")
             results = benchmark_agent(benchmark_cases, model_name, agent, temp)
             results.to_excel(writer, sheet_name=f"run_{i+1}", index=False)
             print(f"Completed run {i+1}/{n}.\n")
+            ensure_text_file("text.txt", "test")
         
 
 # Example usage
 if __name__ == "__main__":
-    models_to_test = ["nemotron-3-nano:30b-cloud","devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
-                      "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","qwen3-next:80b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
-                      "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
-    benchmark_set = "query"
+    #models_to_test = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
+    #                  "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","qwen3-next:80b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
+    #                  "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
+    models_to_test = ["mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
+
+    benchmark_set = "stats"  # Choose from "query", "stats", "plot"
 
     for model in models_to_test:
-        main(n=10, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
+        main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
         print(f"Completed {benchmark_set} benchmarking for model: {model}")
-        ensure_text_file("text.txt", "test")
 
 

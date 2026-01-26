@@ -234,6 +234,30 @@ def build_context(history, max_turns = 10):
     return messages
 
 
+# Check for malicious code patterns
+def is_code_safe(code):
+    # Define a list of forbidden patterns
+    forbidden_patterns = [
+        r"\bimport\s+os\b",
+        r"\bimport\s+sys\b",
+        r"\bos\.system\b",
+        r"\bsubprocess\b",
+        r"\beval\s*\(",
+        r"\bexec\s*\(",
+        r"\bopen\s*\(",
+        r"\b__import__\s*\(",
+        r"\bglobals\s*\(",
+        r"\blocals\s*\(",
+        r"\bcompile\s*\(",
+    ]
+    
+    for pattern in forbidden_patterns:
+        if re.search(pattern, code):
+            return False  # Unsafe code detected
+    
+    return True  # Code is safe
+
+
 if __name__ == "__main__":
     # Simple test of summarize_dataframe function
     df = pd.read_csv("data/data_new.csv", sep="$")

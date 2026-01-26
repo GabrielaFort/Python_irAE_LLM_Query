@@ -712,14 +712,15 @@ def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="
 # Example usage
 if __name__ == "__main__":
     #models_to_test = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
-    #                  "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","qwen3-next:80b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
-    #                  "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
-    models_to_test = ["mistral-large-3:675b-cloud","minimax-m2.1:cloud"]
+    #                  "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
+    #                  "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
+    #                   "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
+    models_to_test = ["deepseek-v3.2:cloud"]
 
     benchmark_set = "stats"  # Choose from "query", "stats", "plot"
 
     for model in models_to_test:
-        main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
+        main(n=1, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
         print(f"Completed {benchmark_set} benchmarking for model: {model}")
 
 

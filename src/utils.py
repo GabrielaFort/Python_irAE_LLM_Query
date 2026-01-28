@@ -10,28 +10,28 @@ import html
 
 # Instantiate LLM clients with preset configurations
 def question_classifier_llm(): 
-    myllm = LLMClient(model="qwen3-coder:480b-cloud",
+    myllm = LLMClient(model="gemini-3-flash-preview:cloud",
                       api_url="https://ollama.com",
                       temperature=0,
                       api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model="glm-4.6:cloud",
+    myllm = LLMClient(model="glm-4.7:cloud",
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def plotter_llm():
-    myllm = LLMClient(model="gpt-oss:120b-cloud",
+    myllm = LLMClient(model="gemini-3-flash-preview:cloud",
                 api_url="https://ollama.com",
                 temperature=0.5,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def stats_llm():
-    myllm = LLMClient(model="glm-4.6:cloud",
+    myllm = LLMClient(model="gemini-3-flash-preview:cloud",
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
@@ -52,7 +52,7 @@ def guideline_llm():
     return myllm
 
 def explanation_llm():
-    myllm = LLMClient(model="glm-4.6:cloud",
+    myllm = LLMClient(model="gemini-3-flash-preview:cloud",
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
@@ -238,18 +238,47 @@ def build_context(history, max_turns = 10):
 def is_code_safe(code):
     # Define a list of forbidden patterns
     forbidden_patterns = [
+        # --- Imports ---
         r"\bimport\s+os\b",
         r"\bimport\s+sys\b",
-        r"\bos\.system\b",
-        r"\bsubprocess\b",
+        r"\bimport\s+subprocess\b",
+        r"\bimport\s+pathlib\b",
+        r"\bimport\s+shutil\b",
+        r"\bimport\s+pickle\b",
+        r"\bfrom\s+os\b",
+        r"\bfrom\s+sys\b",
+        r"\bfrom\s+subprocess\b",
+        r"\bfrom\s+pathlib\b",
+        r"\bfrom\s+shutil\b",
+
+        # --- File system access ---
+        r"\bopen\s*\(",
+        r"\bos\.(remove|unlink|rmdir|mkdir|makedirs|rename|replace|chmod|chown)\b",
+        r"\bshutil\.(rmtree|copy|copytree|move)\b",
+        r"\bpathlib\.Path\s*\(",
+        r"\.read\s*\(",
+        r"\.write\s*\(",
+
+        # --- Environment variables & sensitive data ---
+        r"\bos\.environ\b",
+        r"\bos\.getenv\s*\(",
+        r"\bsys\.argv\b",
+        r"\bsys\.path\b",
+
+        # --- Code execution / reflection ---
         r"\beval\s*\(",
         r"\bexec\s*\(",
-        r"\bopen\s*\(",
+        r"\bcompile\s*\(",
         r"\b__import__\s*\(",
         r"\bglobals\s*\(",
         r"\blocals\s*\(",
-        r"\bcompile\s*\(",
-    ]
+        r"\bvars\s*\(",
+
+        # --- Process / shell ---
+        r"\bos\.system\s*\(",
+        r"\bsubprocess\.",
+        r"\bpopen\s*\("
+        ]
     
     for pattern in forbidden_patterns:
         if re.search(pattern, code):
@@ -260,8 +289,16 @@ def is_code_safe(code):
 
 if __name__ == "__main__":
     # Simple test of summarize_dataframe function
-    df = pd.read_csv("data/data_new.csv", sep="$")
+    #df = pd.read_csv("data/data_new.csv", sep="$")
     #df = pd.read_csv("../data/irae_data_cleaned.csv")
-    print(summarize_dataframe(df, max_rows=5))
+    #print(summarize_dataframe(df, max_rows=5))
+
+    # Clean and export data file
+    #cleaned_df = load_data()
+    #cleaned_df.to_csv("data/irae_data_cleaned.csv", index=False)
+
+    df = pd.read_csv("../data/irae_data_cleaned.csv")
+    print(df.head(20))
+    #print(summarize_dataframe(df, max_rows=5))
     
   

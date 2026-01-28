@@ -440,7 +440,7 @@ def invalid_eval(llm_result):
     if not isinstance(llm_result, str):
         return 0
 
-    coding_keywords = ['def ', 'import', 'print', 'elif', 'pandas', 'numpy','pd.','np.','dropna','groupby','==','.explode','.str.contains','.isna']
+    coding_keywords = ['def ', 'import', 'print', 'elif', 'pd.','np.','dropna','groupby','==','.explode','.str.contains','.isna']
 
     if any(keyword in llm_result for keyword in coding_keywords):
         return 0
@@ -711,11 +711,10 @@ def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="
 
 # Example usage
 if __name__ == "__main__":
-    #models_to_test = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
-    #                  "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
-    #                  "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
-    #                   "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
-    models_to_test = ["deepseek-v3.2:cloud"]
+    models_to_test = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
+                      "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
+                      "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
+                       "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
 
     benchmark_set = "stats"  # Choose from "query", "stats", "plot"
 

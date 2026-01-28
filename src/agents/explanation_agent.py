@@ -19,7 +19,7 @@ Rules:
 - Use plain language, avoid technical jargon.
 - Focus on WHAT was done, not HOW.
 - Explain what YOU did to answer the question.
-- CRITICAL: ONLY INCLUDE THE EXPLANATION, not the question or code or other thoughts.
+- CRITICAL: ONLY INCLUDE THE SHORT EXPLANATION. Do **not** include the original question or generated code.
 
 Examples:
 Question: "Show me lung cancer patients with a rash"

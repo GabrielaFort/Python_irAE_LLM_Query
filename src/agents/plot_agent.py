@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import traceback
 from scipy import stats
-from src.utils import clean_code
+from src.utils import clean_code, is_code_safe
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.tools import mpl_to_plotly
@@ -60,7 +60,7 @@ class PlotAgent:
         **Output**
         - Assign the final Plotly (or Matplotlib) figure to the variable `result` and the intermediate DataFrame to `plot_data`.
         - Do not produce textual summaries or markdown.
-        - If the requested plot is not feasible given the schema, assign a short explanatory string to `result` instead.
+        - If the requested plot is not feasible given the schema, assign a short explanatory **string** to `result` instead. Do not include coding keywords.
         - Output **only** executable Python code — no markdown, comments, or explanations.
 
         {df_summary}
@@ -92,6 +92,12 @@ class PlotAgent:
             safes = {"pd": pd, "np": np, "stats": stats, "sns":sns, "px":px, "go":go, "plt":plt,"venn2":venn2, "venn3":venn3, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
 
             # execute the generated code (it should assign the output to variable `result`)
+            if not is_code_safe(code):
+                return {
+                    "type": "text",
+                    "code": None,
+                    "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
+                }
             exec(code, safes)
             # Execute the generated code
             #exec(code, {**safe_globals, **safe_locals}, safe_locals)

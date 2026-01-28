@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import traceback
-from src.utils import clean_code
+from src.utils import clean_code, is_code_safe
 from scipy import stats
 from collections import Counter
 
@@ -48,7 +48,7 @@ class QueryAgent:
         **Output**
             - a DataFrame subset/summary that answers the question, **or**
             - a single numeric/scalar value if suitable.
-        - If unanswerable from schema, assign a short explanatory string to 'result'.
+        - If unanswerable from schema, assign a short explanatory **string** to 'result'. Do not include coding keywords.
         - Output **only** executable **Python code**, no markdown or explanations.
 
         {df_summary}
@@ -80,6 +80,12 @@ class QueryAgent:
             #safe_locals = {"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)
+            if not is_code_safe(code):
+                return {
+                    "type": "text",
+                    "code": None,
+                    "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
+                }
             exec(code, safes)
 
             result = safes.get("result", None)

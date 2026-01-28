@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import traceback
-from src.utils import clean_code
+from src.utils import clean_code, is_code_safe
 from collections import Counter
 
 class StatsAgent:
@@ -63,7 +63,7 @@ class StatsAgent:
             Assign the scalar directly:
             result = some_number
 
-        - If the requested analysis cannot be completed using the available schema, assign a short explanatory string to `result`.
+        - If the requested analysis cannot be completed using the available schema, assign a short explanatory **string** to `result`. Do not include coding keywords.
 
         - Output **only** executable Python code — no markdown, comments, or explanations.
 
@@ -95,6 +95,13 @@ class StatsAgent:
             safes = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
 
             # execute the generated code (it should assign the output to variable `result`)
+            if not is_code_safe(code):
+                return {
+                    "type": "text",
+                    "code": None,
+                    "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
+                }
+            
             exec(code, safes)
 
             result = safes.get("result", None)

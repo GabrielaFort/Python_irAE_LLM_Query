@@ -6,53 +6,11 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utils import load_data, build_context, explanation_llm 
+from src.utils import build_context, explanation_llm 
 from matplotlib_venn._common import VennDiagram
+from src.agents.guideline_agent import link_short_citations
 import urllib.parse
 import re
-
-# Map for RAG sources 
-SOURCE_MAP = {
-    "ASCO": "https://ascopubs.org/doi/10.1200/JCO.21.01440?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed",
-    "NCCN": "https://jnccn.org/view/journals/jnccn/18/3/article-p230.xml",
-    "SITC": "https://jitc.bmj.com/content/11/3/e006398"
-}
-
-# Simple safe-ish label escape
-def esc_label(s):
-    return s.replace("<", "&lt;").replace(">", "&gt;")
-
-def make_link(url, label):
-    return f'<a href="{url}" target="_blank" rel="noopener noreferrer">{esc_label(label)}</a>'
-
-# Matches (ASCO) or (ASCO;NCCN;PUBMED) where keys are letters/numbers
-PAREN_RE = re.compile(
-    r'(?:(?<=\()|(?<=\[)|(?<=【))'                # left bracket lookbehind: ( or [ or 【
-    r'([A-Z0-9]+(?:\s*;\s*[A-Z0-9]+)*)'          # inner token: ASCO or ASCO;NCCN etc.
-    r'(?=(?:\)|\]|】))'                           # right bracket lookahead: ) or ] or 】
-)
-
-def link_short_citations(text):
-    """
-    text: raw RAG output
-    """
-    def repl(m):
-        items = [it.strip().upper() for it in m.group(1).split(";")]
-        linked = []
-        for key in items:
-            tmpl = SOURCE_MAP.get(key)
-            if tmpl:
-                linked.append(make_link(tmpl, key))
-            else:
-                linked.append(key)
-        return "; ".join(linked)
-    
-    return PAREN_RE.sub(repl, text)
-
-def render_rag_output(raw_text):
-    html = link_short_citations(raw_text)
-    st.markdown(html, unsafe_allow_html=True)
-
 
 # Set up simple streamlit frontend for python LLM query of irae data
 st.set_page_config(
@@ -185,7 +143,8 @@ def apply_default_style(fig):
 plt.rcParams.update({"font.size": 14})
 
 # Clean and load data 
-df = load_data()
+df = pd.read_csv("data/irae_data_cleaned.csv")
+#df2 = load_data()
 
 # Instantiate manager class
 m = Manager(df)
@@ -397,7 +356,10 @@ if result is not None:
         else:
             # If the returned data is a string, show it with links for (ASCO), (NCCN), (SITC)
             if isinstance(res_data, str):
-                render_rag_output(res_data)
+                # render RAG output with clickable links if applicable
+                html = link_short_citations(res_data)
+                st.markdown(html, unsafe_allow_html=True)
+
             else:
                 # non-string results (dict, list, etc.): leave as-is
                 st.write(res_data)

@@ -1,0 +1,81 @@
+﻿Question,Answer,Eval Metric
+Is there an association between outcome and sex?,stats,Exact match
+"For each irae_type, assess whether time_to_onset is skewed. ",stats,Exact match
+Return only the interquartile range (IQR) of time to onset.,stats,Exact match
+Calculate the simple odds ratio of hospitalization for patients age ≥70 vs <70. ,stats,Exact match
+Fetch the youngest 10 patients,tableqa,Exact match
+Return only Kurtosis of time to onset distribution,stats,Exact match
+Is there a difference in the proportion of cutaneous irAEs in lung cancer patients compared to melanoma patients?,stats,Exact match
+Is there a difference in the proportion of male vs female patients with gastrointestinal iraes?,stats,Exact match
+Find cases where age is missing but outcome is known.,tableqa,Exact match
+Patients with gastrointestinal irAEs who were older than 75,tableqa,Exact match
+"For each unique cancer type, which brand name immunotherapy was most frequently used?",tableqa,Exact match
+Show top 10 most frequent irAEs in melanoma patients.,tableqa,Exact match
+Patients whose irAE outcome was “Death” or “Hospitalization”,tableqa,Exact match
+Females,tableqa,Exact match
+Lymphoma patients treated with anti-pdl1,tableqa,Exact match
+Patients with breast cancer or lung cancer,tableqa,Exact match
+Show the relationship between patient age and time to onset using a visual that displays individual observations.,plot,Exact match
+Create a visual summary comparing the distribution of time-to-onset across different tumor types.,plot,Exact match
+"Provide a display that highlights which irAE types occur most often, arranged from most to least common.",plot,Exact match
+Present a visual showing how irAE reporting has changed over calendar years.,plot,Exact match
+Illustrate the pattern of time-to-onset values grouped by treatment class.,plot,Exact match
+Present a visual of sex versus time to onset,plot,Exact match
+Compare age values between male and female patients and summarize whether the two groups differ.,stats,Exact match
+Assess whether age relates to time-to-onset by applying an appropriate test.,stats,Exact match
+Determine whether tumor category is associated with treatment class using an appropriate test.,stats,Exact match
+Evaluate whether patients with more than one irAE tend to have different time-to-onset values than those with exactly one.,stats,Exact match
+Examine whether lung cancer cases and melanoma cases differ in the frequency of cutaneous irAEs using a suitable method.,stats,Exact match
+Return every instance where the patient’s age is below 40 and the tumor type is lung.,tableqa,Exact match
+Provide the data rows associated with endocrine toxicities.,tableqa,Exact match
+Construct a visual that groups patients by age range and displays how their time-to-onset values differ.,plot,Exact match
+Display the relationship between patient age and number of irAEs using a visual with individual points.,plot,Exact match
+Produce a visual representation that highlights which outcomes dominate within each drug class.,plot,Exact match
+Show a visual depiction of the relationship between reporting quarter and patient age.,plot,Exact match
+Illustrate how time-to-onset varies across sex categories using a structured visual layout.,plot,Exact match
+Display how age values are distributed across the cohort using a visual summary.,plot,Exact match
+Compare onset times between older patients and younger patients using an appropriate analytical method.,stats,Exact match
+Analyze whether patients treated with combination therapies exhibit different time-to-onset patterns than those receiving monotherapy.,stats,Exact match
+Determine whether time-to-onset for cutaneous irAEs follows a different pattern than for gastrointestinal irAEs.,stats,Exact match
+Evaluate whether irAE occurrence patterns appear consistent across different reporting years or whether they show variation.,stats,Exact match
+Assess whether endocrine irAEs occur at different onset times than non-endocrine irAEs.,stats,Exact match
+Show the pattern of age values arranged across increasing time-to-onset.,plot,Exact match
+Display how reports are distributed across patient age groups in a way that highlights differences between them.,plot,Exact match
+Provide a representation where individual time-to-onset values are positioned according to patient sex.,plot,Exact match
+Display the trend of irAE reporting across calendar quarters.,plot,Exact match
+Determine whether older patients tend to experience earlier or later irAE onset compared to younger patients.,stats,Exact match
+Compare the distribution of onset times between PD-1 and CTLA-4 treatments.,stats,Exact match
+Assess whether tumor categories differ in their age patterns.,stats,Exact match
+Create a visual that arranges tumor types along one axis and shows the corresponding distribution of ages for each type.,plot,Exact match
+Produce a visual that highlights how time-to-onset values change across calendar years.,plot,Exact match
+Organize outcome categories so their relative frequencies stand out when viewed together.,plot,Exact match
+Place each drug class on one axis and align its associated onset times so differences between classes can be easily seen.,plot,Exact match
+Show patients whose treatment includes pembrolizumab.,tableqa,Exact match
+Show patient entries where cancer_drug_name has more than one item.,tableqa,Exact match
+Provide records from the year 2019 involving CTLA-4 therapies.,tableqa,Exact match
+Show the entries where brand_name includes both “Yervoy” and “Opdivo”.,tableqa,Exact match
+Give the rows for individuals with irAE descriptions containing “Endocrine”.,tableqa,Exact match
+Return all rows where combination_status is “Ici/Chemotherapy”.,tableqa,Exact match
+Show patients with time_to_onset greater than 20 weeks.,tableqa,Exact match
+Provide the records where sex is “Female” and tumor_type includes “Breast”.,tableqa,Exact match
+Return the rows where tumor_type contains “Melanoma” and the outcome is “Death”.,tableqa,Exact match
+What does SITC recommend for treatment of colitis?,guideline,Exact match
+How should I treat grade 3 irAEs?,guideline,Exact match
+What is immune-mediated myocarditis and how does it manifest?,guideline,Exact match
+How should grade 2 diarrea be managed?,guideline,Exact match
+What are the different components of pre-therapy assessments for immune checkpoint blockade?,guideline,Exact match
+What does ASCO recommend for managing immune-related toxicities?,guideline,Exact match
+How should grade 1 irAEs be managed?,guideline,Exact match
+How should immune-mediated colitis be evaluated and diagnosed?,guideline,Exact match
+How should suspected immune-related myocarditis be managed?,guideline,Exact match
+How should irAEs be managed in elderly patients?,guideline,Exact match
+What baseline labs and assessments are recommended before starting ICIs?,guideline,Exact match
+What factors influence decisions to resume immunotherapy?,guideline,Exact match
+How should grade 1 irAEs be managed?,guideline,Exact match
+When should dermatology consultation be obtained?,guideline,Exact match
+How is immune-mediated myocarditis diagnosed?,guideline,Exact match
+What do AACR or SITC advise regarding rechallenge after irAEs?,guideline,Exact match
+What is the role of corticosteroids in irAE treatment?,guideline,Exact match
+What are immune-related adverse events (irAEs) and why do they occur?,guideline,Exact match
+How are irAEs graded according to CTCAE criteria?,guideline,Exact match
+What are general principles for managing irAEs across organ systems?,guideline,Exact match

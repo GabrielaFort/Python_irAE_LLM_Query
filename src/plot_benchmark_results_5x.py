@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib as mpl
 
 # ------------------------
 # CONFIG
@@ -10,6 +11,16 @@ import numpy as np
 DATA_DIR = "../results"        # folder with Excel files
 BENCHMARK = "stats"     # matches *_plot_*.xlsx
 RUNS = 5               # run_1 ... run_5
+OUT_DIR = "../results/plots"  # where to save plot
+os.makedirs(OUT_DIR, exist_ok=True)
+out_path = os.path.join(OUT_DIR, f"accuracy_{BENCHMARK}.pdf")
+
+mpl.rcParams.update({
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+    "font.family": "Arial",
+    "font.size": 9,
+})
 
 # ------------------------
 # LOAD FILES
@@ -24,7 +35,10 @@ labels = []       # model names
 
 def extract_model_name(filename):
     name = os.path.splitext(filename)[0]
-    return name.split("results_")[-1]
+    if BENCHMARK in ["query","plot","stats"]:
+        return name.split("results_")[-1]
+    else:
+        return name.split("classifier_")[-1]
 
 # ------------------------
 # EXTRACT ACCURACIES
@@ -47,7 +61,7 @@ for path in files:
 # ------------------------
 # PLOT: BOX + DOTS
 # ------------------------
-plt.figure(figsize=(10, 5))
+plt.figure(figsize=(9, 6))
 
 dark_grey = "#444444"
 light_grey = "#9e9e9e"
@@ -73,7 +87,7 @@ for i, scores in enumerate(all_scores, start=1):
     mean_val = np.mean(scores)
 
     # place label above the box (Q3)
-    q3 = np.percentile(scores, 75)
+    q3 = np.percentile(scores, 99)
 
     plt.text(
         i,
@@ -88,9 +102,10 @@ for i, scores in enumerate(all_scores, start=1):
 
 plt.xticks(rotation=45, ha="right")
 plt.ylabel("Accuracy")
-plt.title(f"Accuracy across replicates ({BENCHMARK})")
+plt.title(f"Accuracy across replicates ({BENCHMARK})", pad=20)
 plt.ylim(0, 1)
 plt.grid(axis="y", alpha=0.3)
 
 plt.tight_layout()
+plt.savefig(out_path, format="pdf", bbox_inches="tight")
 plt.show()

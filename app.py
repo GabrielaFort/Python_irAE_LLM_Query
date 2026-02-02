@@ -344,11 +344,20 @@ if result is not None:
             st.pyplot(res_data, clear_figure=True)
 
         elif res_type == "dataframe":
-            st.dataframe(res_data, width="stretch", hide_index=True)
+            st.dataframe(res_data.style.format(
+                lambda x: (
+                    f"{x:.6f}".rstrip("0").rstrip(".")
+                    if isinstance(x, (float, np.floating)) else x)
+            ),
+                width="stretch",
+                hide_index=True)
             st.write(f"Result has {res_data.shape[0]} rows and {res_data.shape[1]} columns.")
 
         elif res_type == "number":
-            st.metric(label="Result", value = res_data)
+            if isinstance(res_data, (float, np.floating)):
+                st.metric(label="Result", value = f"{res_data:.6f}".rstrip("0").rstrip("."))
+            else:
+                st.metric(label="Result", value = res_data)
 
         elif res_type == "error":
             st.error(res_data)

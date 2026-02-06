@@ -10,15 +10,16 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 class Manager:
-    def __init__(self,df):
+    def __init__(self,df, shared_index_manager=None):
         self.df = df
 
         # Initialize IndexManager and load index + metas
-        self.index_manager = IndexManager(kb_dir="src/knowledge_base", model_name="NeuML/pubmedbert-base-embeddings")
-        try:
+        # Use shared index manager or create session specific one
+        if shared_index_manager is not None:
+            self.index_manager = shared_index_manager
+        else:
+            self.index_manager = IndexManager(kb_dir="src/knowledge_base", model_name="NeuML/pubmedbert-base-embeddings")
             self.index_manager.load()
-        except FileNotFoundError:
-            raise RuntimeError("Knowledge base not found. Run build_pdf_kb.py to build the index.")
 
         # export search_fn and embed_fn
         self.search_fn = self.index_manager.search
@@ -26,11 +27,11 @@ class Manager:
 
         # Instantiate LLM clients for classifier and agents
         self.classifier = QuestionClassifier(question_classifier_llm())
-        self.query_agent = QueryAgent(df,query_llm())
-        self.plot_agent = PlotAgent(df,plotter_llm())
-        self.stats_agent = StatsAgent(df,stats_llm())
+        self.query_agent = QueryAgent(df.copy(),query_llm())
+        self.plot_agent = PlotAgent(df.copy(),plotter_llm())
+        self.stats_agent = StatsAgent(df.copy(),stats_llm())
         # Pass search_fn (and optionally embed_fn) to GuidelineAgent
-        self.guideline_agent = GuidelineAgent(guideline_llm(), search_fn=self.search_fn, embed_fn=self.embed_fn)
+        self.guideline_agent = GuidelineAgent(llm_client = guideline_llm(), search_fn = self.search_fn, embed_fn = self.embed_fn, top_k = 10)
         self.error_agent = ErrorAgent(error_checker_llm())
 
         # Summarize the dataframe - will need every time we instantiate this class
@@ -82,6 +83,8 @@ class Manager:
                 # Re-execute the corrected code
                 retry_result = agent.execute_code(corrected_code)
 
+                #### need to change this to add all errors to log but only return friendly messsage to user ###
+                ### User does not get to see error traceback or raw error message, but we log it for debugging and improvement purposes.
                 if retry_result["type"] == "error":
                     retry_result["data"] = (
                         "Automatic correction failed:\n\n"

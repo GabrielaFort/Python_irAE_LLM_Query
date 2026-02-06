@@ -1,4 +1,7 @@
 # Class for agent that generates and executes plotting code based on user question classification
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for safe plotting
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd 
@@ -148,6 +151,7 @@ class PlotAgent:
                 }
 
         except Exception as e:
+            plt.close('all')
             err = traceback.format_exc()
 
             return {
@@ -156,3 +160,7 @@ class PlotAgent:
                 "data": f"Error creating plot: {e}\n\n{err}",
                 "plot_data": None
             }
+        
+        # Clean up any unclosed plots 
+        finally:
+            plt.close('all')

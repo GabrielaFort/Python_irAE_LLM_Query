@@ -90,7 +90,7 @@ CRITICAL RULES:
 - DO NOT use markdown tables or vertical bars (|).
 - DO NOT output multi-column layouts.
 - Write the answer as clean, concise clinical prose.
-- Cite sources in parentheses **with source(s) name only** (ASCO), (ASCO;NCCN).
+- CRITICAL: Cite sources in parentheses **with source(s) name only** (ASCO), (ASCO;NCCN).
 - Every time information is used from the guidelines, cite the source.
 - If a user asks specifically about ASCO, SITC, or NCCN guidelines, prioritize answers from that guideline.
 - No HTML tags, no <br>, no <p>.

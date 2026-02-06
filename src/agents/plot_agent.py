@@ -8,13 +8,16 @@ import pandas as pd
 import numpy as np
 import traceback
 from scipy import stats
-from src.utils import clean_code, is_code_safe
+from src.utils import clean_code, is_code_safe, run_with_timeout
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.tools import mpl_to_plotly
 from matplotlib_venn._common import VennDiagram
 from matplotlib_venn import venn2, venn3
 from collections import Counter
+import threading
+
+_mpl_lock = threading.Lock()  # Lock for matplotlib state access
 
 class PlotAgent:
     """
@@ -41,7 +44,7 @@ class PlotAgent:
         - Use the dataframe variable name 'df'.
         - Assign the final figure object to a variable named 'result'.
         - In addition, create a pandas DataFrame named `plot_data` that contains the exact data used to construct the plot (one row per point/bar/etc).
-        - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, `plotly.express (px)`, `plotly.graph_objects (go)`, `scipy.stats (stats)` are already imported.
+        - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, `plotly.express (px)`, `plotly.graph_objects (go)`, `scipy.stats (stats)`, `matplotlib.pyplot (plt)`, `venn2` and `venn3` are already imported.
         - Only use columns and data types shown in the summary. Do **not** assume any others.
         - You may create temporary variables, but never modify or overwrite 'df'.
         - When splitting comma-separated values, ALWAYS assign and explode within the SAME DataFrame (e.g., df_copy['col'] = df_copy['col'].str.split(...); df_copy = df_copy.explode('col')). Never create a separate exploded Series and assign it back.
@@ -56,7 +59,7 @@ class PlotAgent:
 
         **Special Cases**
         - For overlap or co-occurrence plots:
-            - You may import `venn2` or `venn3` from `matplotlib_venn`.
+            - You may use `venn2` or `venn3` from `matplotlib_venn`.
             - Assign the resulting Matplotlib Axes object to `result` instead of a Plotly figure.
             - Do **not** attempt to recreate Venn diagrams using Plotly.
 
@@ -90,9 +93,51 @@ class PlotAgent:
 
         # Restrict variables accessible during execution
         try:
-            #safe_locals = {"df": self.df.copy()}
-            #safe_globals = {"pd":pd, "np":np, "stats":stats, "plt":plt, "sns":sns, "px":px, "go":go, "venn2":venn2, "venn3":venn3, "Counter":Counter, "__builtins__":__builtins__} 
-            safes = {"pd": pd, "np": np, "stats": stats, "sns":sns, "px":px, "go":go, "plt":plt,"venn2":venn2, "venn3":venn3, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
+            # Comprehensive safe builtins for plotting operations
+            safe_builtins = {
+                # Type constructors
+                "list": list, "dict": dict, "set": set, "tuple": tuple,
+                "str": str, "int": int, "float": float, "bool": bool,
+                "frozenset": frozenset, "bytes": bytes,
+                
+                # Iteration & functional programming
+                "range": range, "enumerate": enumerate, "zip": zip,
+                "map": map, "filter": filter, "sorted": sorted, "reversed": reversed,
+                
+                # Aggregation
+                "len": len, "sum": sum, "min": min, "max": max,
+                "all": all, "any": any,
+                
+                # Math & rounding
+                "abs": abs, "round": round, "pow": pow, "divmod": divmod,
+                
+                # Type introspection
+                "type": type, "isinstance": isinstance, "issubclass": issubclass,
+                "hasattr": hasattr, "getattr": getattr, "setattr": setattr,
+                "callable": callable,
+                
+                # String operations
+                "ord": ord, "chr": chr, "repr": repr, "ascii": ascii,
+                
+                # Exceptions
+                "Exception": Exception, "ValueError": ValueError,
+                "TypeError": TypeError, "KeyError": KeyError,
+                "IndexError": IndexError, "AttributeError": AttributeError,
+                "ZeroDivisionError": ZeroDivisionError,
+                
+                # Utilities
+                "print": print, "format": format, "hash": hash,
+                "id": id, "hex": hex, "bin": bin, "oct": oct,
+                
+                # Slicing
+                "slice": slice,
+            }
+            
+            safes = {
+                "pd": pd, "np": np, "stats": stats, "sns":sns, "px":px, "go":go, "plt":plt,
+                "venn2":venn2, "venn3":venn3, "Counter": Counter, 
+                "__builtins__": safe_builtins, "df" : self.df.copy()   
+            }
 
             # execute the generated code (it should assign the output to variable `result`)
             if not is_code_safe(code):
@@ -101,59 +146,80 @@ class PlotAgent:
                     "code": None,
                     "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
                 }
-            exec(code, safes)
-            # Execute the generated code
-            #exec(code, {**safe_globals, **safe_locals}, safe_locals)
-
-            # Retrieve result if defined
-            result = safes.get("result", None)
-            plot_data = safes.get("plot_data", None)
-
-            # If 'result' is a plotly figure
-            if hasattr(result, "to_plotly_json"): 
-                return {
-                    "type": "plotly",
-                    "code": code,
-                    "data": result,
-                    "plot_data": plot_data}
-
-            # If 'result' is a matplotlib Figure or Axes
-            elif isinstance(result, plt.Figure) or hasattr(result, "figure"):
-                fig = result.figure if hasattr(result, "figure") else result
-                # Check to see if venn diagram, if so keep as matplotlib object
-                if "matplotlib_venn" in code.lower() or "venn2" in code.lower() or "venn3" in code.lower():
-                    plt.close(fig)
-                    return {"type": "plot", "code": code, "data": fig, "plot_data": plot_data}
-                # Else, convert to plotly for interactive display
-                plotly_fig = mpl_to_plotly(fig)
-                plt.close(fig)
-                return {"type": "plotly", "code": code, "data": plotly_fig, "plot_data": plot_data}
             
-            elif isinstance(result, VennDiagram):
-                fig = result.figure
-                plt.close(fig)
-                return {"type": "plot", "code": code, "data": fig, "plot_data": plot_data}
+            # Guard all matplotlib state access with a lock 
+            with _mpl_lock:
+                start_fignums = set(plt.get_fignums())
+                keep_fignums = set()  # Track fignums to keep (e.g., for venn diagrams)
             
-            # If 'result' is a string (e.g., polite note)
-            elif isinstance(result, str):
-                return {
-                    "type": "text",
-                    "code": code,
-                    "data": result,
-                    "plot_data": plot_data}
-            
-            else:
-                return {
-                    "type": "text",
-                    "code": code, 
-                    "data": "No valid figure or text result returned.",
-                    "plot_data": plot_data
-                }
+                try:
+                    result = run_with_timeout(code, safes, timeout = 30)
 
+                    # Retrieve result if defined
+                    result = safes.get("result", None)
+                    plot_data = safes.get("plot_data", None)
+
+                    # If 'result' is a plotly figure
+                    if hasattr(result, "to_plotly_json"): 
+                        return {
+                            "type": "plotly",
+                            "code": code,
+                            "data": result,
+                            "plot_data": plot_data}
+
+                    # If 'result' is a matplotlib Figure or Axes
+                    elif isinstance(result, plt.Figure) or hasattr(result, "figure"):
+                        fig = result.figure if hasattr(result, "figure") else result
+                        # Check to see if venn diagram, if so keep as matplotlib object
+                        if "matplotlib_venn" in code.lower() or "venn2" in code.lower() or "venn3" in code.lower():
+                            if hasattr(fig, "number"):
+                                keep_fignums.add(fig.number)
+                            return {"type": "plot", "code": code, "data": fig, "plot_data": plot_data}
+                        # Else, convert to plotly for interactive display
+                        plotly_fig = mpl_to_plotly(fig)
+                        plt.close(fig)
+                        return {"type": "plotly", "code": code, "data": plotly_fig, "plot_data": plot_data}
+                    
+                    elif isinstance(result, VennDiagram):
+                        fig = result.figure
+                        if hasattr(fig, "number"):
+                            keep_fignums.add(fig.number)
+                        return {"type": "plot", "code": code, "data": fig, "plot_data": plot_data}
+                    
+                    # If 'result' is a string (e.g., polite note)
+                    elif isinstance(result, str):
+                        return {
+                            "type": "text",
+                            "code": code,
+                            "data": result,
+                            "plot_data": plot_data}
+                    
+                    else:
+                        return {
+                            "type": "text",
+                            "code": code, 
+                            "data": "No valid figure or text result returned.",
+                            "plot_data": plot_data
+                        }
+                    
+                # Clean up any unclosed plots 
+                finally:
+                    end_fignums = set(plt.get_fignums())
+                    leaked_fignums = end_fignums - start_fignums
+                    for fignum in leaked_fignums:
+                        if fignum not in keep_fignums:
+                            plt.close(fignum)
+
+        except TimeoutError:
+            return {
+                "type": "error",
+                "code": code,
+                "data": "Code execution timed out. The operation may be too complex or inefficient. Please try a simpler question or check the code for potential infinite loops.",
+                "plot_data": None
+            }
+        
         except Exception as e:
-            plt.close('all')
             err = traceback.format_exc()
-
             return {
                 "type": "error",
                 "code": code, 
@@ -161,6 +227,4 @@ class PlotAgent:
                 "plot_data": None
             }
         
-        # Clean up any unclosed plots 
-        finally:
-            plt.close('all')
+

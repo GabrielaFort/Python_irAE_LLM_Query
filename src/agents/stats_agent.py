@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import traceback
-from src.utils import clean_code, is_code_safe
+from src.utils import clean_code, is_code_safe, run_with_timeout
 from collections import Counter
 
 class StatsAgent:
@@ -90,9 +90,49 @@ class StatsAgent:
 
         # Restrict variables accessible during execution
         try:
+            # Comprehensive safe builtins for statistical operations
+            safe_builtins = {
+                # Type constructors
+                "list": list, "dict": dict, "set": set, "tuple": tuple,
+                "str": str, "int": int, "float": float, "bool": bool,
+                "frozenset": frozenset, "bytes": bytes,
+                
+                # Iteration & functional programming
+                "range": range, "enumerate": enumerate, "zip": zip,
+                "map": map, "filter": filter, "sorted": sorted, "reversed": reversed,
+                
+                # Aggregation
+                "len": len, "sum": sum, "min": min, "max": max,
+                "all": all, "any": any,
+                
+                # Math & rounding (critical for statistics)
+                "abs": abs, "round": round, "pow": pow, "divmod": divmod,
+                
+                # Type introspection
+                "type": type, "isinstance": isinstance, "issubclass": issubclass,
+                "hasattr": hasattr, "getattr": getattr, "setattr": setattr,
+                "callable": callable,
+                
+                # String operations
+                "ord": ord, "chr": chr, "repr": repr, "ascii": ascii,
+                
+                # Exceptions (important for statistical edge cases)
+                "Exception": Exception, "ValueError": ValueError,
+                "TypeError": TypeError, "KeyError": KeyError,
+                "IndexError": IndexError, "AttributeError": AttributeError,
+                "ZeroDivisionError": ZeroDivisionError, "RuntimeWarning": RuntimeWarning,
+                
+                # Utilities
+                "print": print, "format": format, "hash": hash,
+                "id": id, "hex": hex, "bin": bin, "oct": oct,
+                
+                # Slicing
+                "slice": slice,
+            }
             
             # Provide a copy of the dataframe to avoid modifications
-            safes = {"pd": pd, "np": np, "stats": stats, "Counter": Counter, "__builtins__": __builtins__,"df" : self.df.copy()} 
+            safes = {"pd": pd, "np": np, "stats": stats, "Counter": Counter,
+                     "__builtins__": safe_builtins,"df" : self.df.copy()} 
 
             # execute the generated code (it should assign the output to variable `result`)
             if not is_code_safe(code):
@@ -102,9 +142,7 @@ class StatsAgent:
                     "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
                 }
             
-            exec(code, safes)
-
-            result = safes.get("result", None)
+            result = run_with_timeout(code, safes, timeout = 30)
 
             if result is None:
                 return {
@@ -140,6 +178,13 @@ class StatsAgent:
             return {"type": type_str,
                     "code": code,
                     "data": display_data}
+        
+        except TimeoutError:
+            return {
+                "type": "error",
+                "code": code,
+                "data": "Code execution timed out. The operation may be too complex or inefficient. Please try a simpler question or check the code for potential infinite loops."
+            }
         
         except Exception as e:
 

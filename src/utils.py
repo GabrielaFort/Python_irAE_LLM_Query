@@ -183,7 +183,13 @@ def clean_code(code):
     # If code is a single line and doesn't already assign to result, prepend "result = "
     if "\n" not in code and not code.lstrip().startswith("result"):
         code = f"result = {code}"
-    
+
+    # remove import statements if any slipped through
+    if "import" in code.lower():
+        code = "\n".join([
+                line for line in code.split("\n") 
+                if not line.strip().startswith(("import ", "from "))
+            ])
     return code
 
 # Function to clean text extracted from PDFs or other sources
@@ -251,6 +257,18 @@ def is_code_safe(code):
         r"\bfrom\s+pathlib\b",
         r"\bfrom\s+shutil\b",
 
+        # --- Write patterns ---
+        r'\.to_csv\(',
+        r'\.to_excel\(',
+        r'\.to_parquet\(',
+        r'open\s*\(',
+        r'with\s+open\(',
+        r'Path\(',
+        r'os\.remove',
+        r'os\.rmdir',
+        r'shutil\.',
+        r'pd\.to_pickle',
+
         # --- File system access ---
         r"\bopen\s*\(",
         r"\bos\.(remove|unlink|rmdir|mkdir|makedirs|rename|replace|chmod|chown)\b",
@@ -287,6 +305,57 @@ def is_code_safe(code):
     return True  # Code is safe
 
 
+# Need to run code with a timeout to prevent infinite loops or long-running code from hanging the system
+import threading
+
+class TimeoutError(Exception):
+    """Raised when code execution times out."""
+    pass
+
+def run_with_timeout(code, safes, timeout=30):
+    """
+    Run code with a timeout using threading.
+    
+    Limitation: Won't kill infinite loops like while True,
+    but will timeout on slow pandas/numpy/plotting operations.
+    
+    Args:
+        code: String of Python code to execute
+        safes: Dictionary of safe variables/functions
+        timeout: Maximum time allowed - seconds (default 30)
+    
+    Returns:
+        The result from safes.get("result")
+    
+    Raises:
+        TimeoutError: If code runs longer than timeout
+    """
+    result_container = {"result": None, "error": None, "done": False}
+    
+    def execute_code():
+        try:
+            exec(code, safes)
+            result_container["result"] = safes.get("result", None)
+            result_container["done"] = True
+        except Exception as e:
+            import traceback
+            result_container["error"] = traceback.format_exc()
+            result_container["done"] = True
+    
+    thread = threading.Thread(target=execute_code)
+    thread.daemon = True  # Thread dies when main program exits
+    thread.start()
+    thread.join(timeout=timeout)
+    
+    if not result_container["done"]:
+        raise TimeoutError(f"Code execution timed out after {timeout} seconds")
+    
+    if result_container["error"]:
+        raise Exception(result_container["error"])
+    
+    return result_container["result"]
+
+
 if __name__ == "__main__":
     # Simple test of summarize_dataframe function
     #df = pd.read_csv("data/data_new.csv", sep="$")
@@ -297,8 +366,54 @@ if __name__ == "__main__":
     #cleaned_df = load_data()
     #cleaned_df.to_csv("data/irae_data_cleaned.csv", index=False)
 
-    df = pd.read_csv("../data/irae_data_cleaned.csv")
-    print(df.head(20))
-    #print(summarize_dataframe(df, max_rows=5))
+    #df = pd.read_csv("../data/irae_data_cleaned.csv")
+    #print(df.head(20))
+    # Test that file operations are blocked
+
+    # Tiny test for is_code_safe function
+    assert is_code_safe("open('test.txt', 'w')") == False
+    assert is_code_safe("import os") == False
+    assert is_code_safe("os.remove('file.txt')") == False
+    assert is_code_safe("__import__('os').system('rm file')") == False
+
+    # Test that safe operations pass
+    assert is_code_safe("result = df.groupby('column').sum()") == True
+    assert is_code_safe("result = len(df)") == True
+
+
+    # Test timeout with a slow operation (doesn't need imports)
+    print("\n=== Testing timeout functionality ===")
+    
+    code = """
+# Simulate slow operation without imports
+total = 0
+for i in range(100000000):  # Very slow loop
+    total += i
+result = total
+    """
+    safes = {"__builtins__": {"range": range, "len": len, "sum": sum, "list": list, "int": int}}  
+    
+    try:
+        result = run_with_timeout(code, safes, timeout=2)
+        print("❌ Should have timed out")
+    except TimeoutError as e:
+        print(f"✅ Timeout test passed: {e}")
+    except Exception as e:
+        print(f"❌ Different error: {e}")
+    
+    # Test that fast code works
+    print("\n=== Testing fast code execution ===")
+    code = "result = 2 + 2"
+    safes = {"__builtins__": {}}
+    
+    try:
+        result = run_with_timeout(code, safes, timeout=5)
+        if result == 4:
+            print(f"✅ Fast code test passed: result = {result}")
+        else:
+            print(f"❌ Wrong result: {result}")
+    except Exception as e:
+        print(f"❌ Fast code failed: {e}")
+    
     
   

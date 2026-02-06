@@ -142,15 +142,35 @@ def apply_default_style(fig):
 # Matplot lib venn viagram style
 plt.rcParams.update({"font.size": 14})
 
-# Clean and load data 
-df = pd.read_csv("data/irae_data_cleaned.csv")
-#df2 = load_data()
+# load cleaned data
+@st.cache_data
+def load_data():
+    return pd.read_csv("data/irae_data_cleaned.csv")
+df = load_data()
 
-# Instantiate manager class
-m = Manager(df)
+# Load FAISS index ONCE globally (shared across all sessions)
+@st.cache_resource
+def load_index_manager():
+    """Load the FAISS index manager once and share across sessions."""
+    from src.index_manager import IndexManager
+    index_mgr = IndexManager(
+        kb_dir="src/knowledge_base", 
+        model_name="NeuML/pubmedbert-base-embeddings"
+    )
+    index_mgr.load()
+    return index_mgr
 
-# Instantiate ExplanationAgent
-explanation_agent = ExplanationAgent(explanation_llm())
+shared_index = load_index_manager()
+
+# Instantiate session-specific manager
+if "manager" not in st.session_state:
+    st.session_state["manager"] = Manager(df.copy(deep=True), shared_index_manager=shared_index)
+m = st.session_state["manager"]
+
+# Instantiate session-specific explanation agent
+if "explanation_agent" not in st.session_state:
+    st.session_state["explanation_agent"] = ExplanationAgent(explanation_llm())
+explanation_agent = st.session_state["explanation_agent"]
 
 # Setup app layout 
 st.title("irAE Dataset LLM Assistant")
@@ -160,7 +180,7 @@ st.markdown("""
 Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in the **FAERS** dataset.
 
 Use this tool to:
-- Ask questions about specific cancer types, drugs, or toxicities  
+- Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
 - Generate plots or summaries of irAE patterns  
 - Automatically produce reproducible Python code
 
@@ -217,12 +237,11 @@ if st.session_state["pending_question"] is not None:
     st.session_state["question_input"] = st.session_state["pending_question"]
     st.session_state["pending_question"] = None
 
-
 ### Query interface ###
 st.header("Ask a Question")
 
 # Input question box with Enter submission
-with st.form("query_form", clear_on_submit=False):
+with st.form("query_form", clear_on_submit=False, enter_to_submit=True):
     question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.",key="question_input", autocomplete="off")
     submitted = st.form_submit_button("Submit", width='stretch')
 
@@ -230,7 +249,7 @@ with st.form("query_form", clear_on_submit=False):
 if st.button("Reset Conversation"):
     st.session_state["history"] = []
     st.session_state["last_result"] = None
-    st.session_state["pending_question"] = "" 
+    st.session_state["pending_question"] = None 
     st.session_state["last_explanation"] = None
     st.rerun()
 
@@ -334,21 +353,27 @@ if result is not None:
             plotly_config = {"displayModeBar": True,
                                 "scrollZoom": True,
                                 "responsive": True,
-                                "editable": True}
+                                "editable": True,
+                                "toImageButtonOptions": {
+                                    "format": "png",
+                                    "filename": "irAE_plot",
+                                    "scale": 3
+                                }}
             
             fig = apply_default_style(res_data)
             st.plotly_chart(fig, config=plotly_config)
 
         # Handle matplotlib plots like venn diagrams
-        elif res_type == "plot" and isinstance(res_data, plt.Figure) or hasattr(res_data, "figure") or isinstance(res_data, VennDiagram):
+        elif res_type == "plot" and (isinstance(res_data, plt.Figure)) or hasattr(res_data, "figure") or isinstance(res_data, VennDiagram):
             st.pyplot(res_data, clear_figure=True)
 
         elif res_type == "dataframe":
-            st.dataframe(res_data.style.format(
-                lambda x: (
-                    f"{x:.6f}".rstrip("0").rstrip(".")
-                    if isinstance(x, (float, np.floating)) else x)
-            ),
+            df = res_data.copy()
+            for col in df.select_dtypes(include=["float", "float64"]).columns:
+                df[col] = df[col].map(
+                    lambda x: f"{x:.6f}".rstrip("0").rstrip(".") if pd.notna(x) else x
+                    )
+            st.dataframe(df,
                 width="stretch",
                 hide_index=True)
             st.write(f"Result has {res_data.shape[0]} rows and {res_data.shape[1]} columns.")
@@ -398,6 +423,4 @@ if st.session_state["history"]:
                 st.session_state["pending_question"] = turn['question']
                 st.session_state["rerun_query"] = turn['question']
                 st.rerun()
-
-
 

@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
+import seaborn as sns
 
 # ------------------------
 # CONFIG
@@ -109,3 +110,6 @@ plt.grid(axis="y", alpha=0.3)
 plt.tight_layout()
 plt.savefig(out_path, format="pdf", bbox_inches="tight")
 plt.show()
+
+print(f"Box plot saved to: {out_path}")
+

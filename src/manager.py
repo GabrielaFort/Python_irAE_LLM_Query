@@ -8,6 +8,10 @@ from src.index_manager import IndexManager
 import traceback
 import numpy as np
 from sentence_transformers import SentenceTransformer
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class Manager:
     def __init__(self,df, shared_index_manager=None):
@@ -56,16 +60,21 @@ class Manager:
 
         if qtype == "tableqa":
             agent = self.query_agent
+            logger.info("Question asked and classified as 'tableqa'. Routing to QueryAgent.")
         elif qtype == "plot":
             agent = self.plot_agent
+            logger.info("Question asked and classified as 'plot'. Routing to PlotAgent.")
         elif qtype == "stats":
             agent = self.stats_agent
+            logger.info("Question asked and classified as 'stats'. Routing to StatsAgent.")
         elif qtype == "guideline":
+            logger.info("Question asked and classified as 'guideline'. Routing to GuidelineAgent.")
             return self.guideline_agent.handle(question, messages=context)
         else:
+            logger.warning("Question type '%s' not recognized. Returning error.", qtype)
             return({"type": "text",
                       "code": None,
-                      "data": "Sorry, I couldn’t classify that question."})
+                      "data": "Sorry, I couldn’t classify that question. Please try again or rephrase it."})
         
         # Try to handle the question with the selected agent
         try:
@@ -74,6 +83,7 @@ class Manager:
             
             if result["type"] == "error":
                 # If there was an error, use the ErrorAgent to fix the code
+                logger.info("Error detected in code execution, invoking ErrorAgent for correction.")
                 corrected_code = self.error_agent.handle(
                     question,
                     result["data"],
@@ -86,18 +96,22 @@ class Manager:
                 #### need to change this to add all errors to log but only return friendly messsage to user ###
                 ### User does not get to see error traceback or raw error message, but we log it for debugging and improvement purposes.
                 if retry_result["type"] == "error":
+                    logger.error("Automatic correction failed: %s", retry_result["data"])
                     retry_result["data"] = (
                         "Automatic correction failed:\n\n"
                         + retry_result["data"]
                         + "\n"
                     )
-
+                
+                if retry_result["type"] != "error":
+                    logger.info("Returning result after error correction attempt, no further error detected.")
+                
                 return retry_result
             
             return result 
 
         except Exception as e:
-
+            logger.error("Fatal Manager error: %s", e, exc_info=True)
             err = traceback.format_exc()
               
             return {

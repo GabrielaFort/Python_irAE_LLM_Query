@@ -43,6 +43,7 @@ Classify the following question into ONE of these categories:
 RULES:
 - Return ONLY the category name: one of {'tableqa', 'stats', 'plot', 'guideline'}.
 - Do NOT explain your reasoning.
+- If completely irrelevant (i.e. why is the sky blue?), return 'tableqa' as a default to route to the most general agent.
         """
 
         # Build messages for LLM

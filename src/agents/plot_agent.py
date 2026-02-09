@@ -198,7 +198,7 @@ class PlotAgent:
                         return {
                             "type": "text",
                             "code": code, 
-                            "data": "No valid figure or text result returned.",
+                            "data": "No valid figure or text result returned. Please try again or rephrase your question.",
                             "plot_data": plot_data
                         }
                     

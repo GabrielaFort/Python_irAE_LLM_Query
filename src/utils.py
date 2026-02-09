@@ -7,6 +7,8 @@ import os
 import json
 import re
 import html
+import logging
+from pathlib import Path
 
 # Instantiate LLM clients with preset configurations
 def question_classifier_llm(): 
@@ -354,6 +356,22 @@ def run_with_timeout(code, safes, timeout=30):
         raise Exception(result_container["error"])
     
     return result_container["result"]
+
+
+### Logging setup
+# When I create docker container - need to add ENV LOG_LEVEL=INFO
+#ENV LOG_FILE=/app/logs/app.log
+def setup_logging() -> None:
+    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_path = Path(os.getenv("LOG_FILE", "/app/logs/app.log"))
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        handlers=[logging.FileHandler(log_path, mode="a", encoding="utf-8")],
+        force=True,
+    )
 
 
 if __name__ == "__main__":

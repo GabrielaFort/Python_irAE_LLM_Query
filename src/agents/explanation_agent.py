@@ -53,7 +53,7 @@ Code: df[(df['tumor_type'] == 'lung cancer') & (df['irae'].str.contains('rash', 
 Explanation: "I filtered the dataset to show only lung cancer patients who experienced a rash as an irAE."
 
 Question: "Test for an association between irae type and sex"
-Code: df2 = df[['irae_type','sex']].dropna()\ndf2['irae_type'] = df2['irae_type'].astype(str).str.split(r'\s*,\s*')\ndf2 = df2.explode('irae_type')\ntab = pd.crosstab(df2['irae_type'], df2['sex'])\nchi2, p_value, dof, _ = stats.chi2_contingency(tab)\nresult = pd.DataFrame({{'statistic':[chi2], 'p_value':[p_value]}})
+Code: df2 = df[['irae_type','sex']].dropna()\ndf2['irae_type'] = df2['irae_type'].astype(str).str.split(r'\\s*,\\s*')\ndf2 = df2.explode('irae_type')\ntab = pd.crosstab(df2['irae_type'], df2['sex'])\nchi2, p_value, dof, _ = stats.chi2_contingency(tab)\nresult = pd.DataFrame({{'statistic':[chi2], 'p_value':[p_value]}})
 Explanation: "I checked whether the distribution of different irAE types varies between male and female patients by building a table of counts and running a chi‑square test of independence.
 """
 

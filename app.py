@@ -6,11 +6,30 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utils import build_context, explanation_llm 
+from src.utils import build_context, explanation_llm, setup_logging
 from matplotlib_venn._common import VennDiagram
 from src.agents.guideline_agent import link_short_citations
 import urllib.parse
 import re
+import uuid
+import logging
+
+# Set up logging
+setup_logging()
+logger = logging.getLogger(__name__)
+
+# log each new session with a unique ID and timestamp, and log each rerun with the session ID and rerun count
+if "session_id" not in st.session_state:
+    st.session_state["session_id"] = str(uuid.uuid4())
+    st.session_state["rerun_count"] = 0
+    logger.info("NEW_SESSION session_id=%s", st.session_state["session_id"])
+
+st.session_state["rerun_count"] += 1
+logger.info(
+    "RERUN session_id=%s rerun_count=%d",
+    st.session_state["session_id"],
+    st.session_state["rerun_count"],
+)
 
 # Set up simple streamlit frontend for python LLM query of irae data
 st.set_page_config(
@@ -342,7 +361,6 @@ if result is not None:
         tab_code = None
 
     with tab_result:
-
         # Display explanation if available
         if explanation:
             st.info(f"💡 {explanation}")
@@ -385,7 +403,7 @@ if result is not None:
                 st.metric(label="Result", value = res_data)
 
         elif res_type == "error":
-            st.error(res_data)
+            st.error("There was an issue processing your request. Please try again or rephrase your question.")
             
         else:
             # If the returned data is a string, show it with links for (ASCO), (NCCN), (SITC)
@@ -400,7 +418,7 @@ if result is not None:
 
     if tab_code:
         with tab_code:
-            code_text = str(res_code)
+            code_text = str(res_code) if res_type != "error" and not isinstance(res_data, str) else f"No code generated."
             st.code(code_text, language="python")
 
 else:

@@ -1,0 +1,22 @@
+# Python cache / build artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Source files not needed at runtime
+src/test_*.py
+src/benchmark_*.py
+src/build_pdf_kb.py
+src/debug_index.py
+src/plot_benchmark_results*
+src/plot_heatmap*
+src/knowledge_base/*.pdf
+
+# Git metadata
+.git/
+.gitignore
+
+

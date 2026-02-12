@@ -31,7 +31,7 @@ logger.info(
     st.session_state["rerun_count"],
 )
 
-# Set up simple streamlit frontend for python LLM query of irae data
+# Set up streamlit frontend for python LLM query of irae data
 st.set_page_config(
     page_title = "irAE Dataset LLM Assistant",
     layout = "wide",
@@ -167,10 +167,10 @@ def load_data():
     return pd.read_csv("data/irae_data_cleaned.csv")
 df = load_data()
 
-# Load FAISS index ONCE globally (shared across all sessions)
+# Load FAISS index ONCE globally
 @st.cache_resource
 def load_index_manager():
-    """Load the FAISS index manager once and share across sessions."""
+    """Load the FAISS index manager once."""
     from src.index_manager import IndexManager
     index_mgr = IndexManager(
         kb_dir="src/knowledge_base", 
@@ -196,7 +196,7 @@ st.title("irAE Dataset LLM Assistant")
 
 # Introduction section
 st.markdown("""
-Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in the **FAERS** dataset.
+Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
 
 Use this tool to:
 - Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
@@ -230,7 +230,7 @@ st.dataframe(df.head(10), width='stretch', hide_index=True)
 
 with st.expander("View column descriptions"):
     st.markdown("""
-    - **patient_id**: Unique identifier for each patient  
+    - **patient_id**: Unique identifier for each case 
     - **irae**: irAE(s) reported
     - **irae_type**: Broader category of irAE
     - **outcome**: Patient outcome 
@@ -261,7 +261,7 @@ st.header("Ask a Question")
 
 # Input question box with Enter submission
 with st.form("query_form", clear_on_submit=False, enter_to_submit=True):
-    question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer patients with a rash.",key="question_input", autocomplete="off")
+    question = st.text_input("Ask a question:", placeholder="e.g. Show me lung cancer cases with a rash.",key="question_input", autocomplete="off")
     submitted = st.form_submit_button("Submit", width='stretch')
 
 # Reset session button

@@ -11,8 +11,6 @@ An LLM-powered interactive analytics platform for exploring real-world immune-re
 
 ## Overview
 
-Immune checkpoint inhibitors (ICIs) have transformed cancer treatment, but their use is frequently complicated by immune-related adverse events (irAEs). Understanding real-world toxicity patterns is critical for improving patient management and guiding translational research.
-
 This project presents an **AI-enabled platform** for interactive exploration of irAEs derived from the FDA Adverse Event Reporting System (FAERS). The system combines:
 
 1. A curated, oncology-specific FAERS dataset (2012Q4–2025Q3)
@@ -42,10 +40,11 @@ The goal is to lower the technical barrier to complex pharmacovigilance analyses
 
 Users can ask questions in plain English, such as:
 
-- “How many melanoma patients treated with anti-PD-1 developed colitis?”
-- “Compare pneumonitis rates between lung cancer and melanoma.”
-- “Run a chi-square test comparing colitis rates across drug classes.”
-- “Create a heatmap of irAE proportions by tumor type.”
+- "How many melanoma patients treated with anti-PD-1 developed colitis?"
+- "Compare pneumonitis proportions between lung cancer and melanoma."
+- "Run a chi-square test comparing colitis proportions across drug classes."
+- "Create a heatmap of irAE proportions by tumor type."
+- "Tell me how immune-mediated pneumonitis is graded and treated."
 
 The system automatically:
 

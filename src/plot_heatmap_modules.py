@@ -34,7 +34,7 @@ def extract_model_name(filename, benchmark):
     This function tries to be flexible with the split logic you used earlier.
     """
     name = os.path.splitext(filename)[0]
-    # If your filenames are like results_{model}_{benchmark}_... or classifier_{model}_...
+    # filenames are like results_{model}_{benchmark}_... or classifier_{model}_...
     if benchmark in ["query", "stats", "plot","classifier"]:
         # remove prefix if present
         if "results_" in name:
@@ -107,7 +107,6 @@ df = pd.DataFrame.from_dict(acc_dict, orient="index")
 # order columns as BENCHMARKS, fill missing with NaN (or 0 if you prefer)
 df = df.reindex(columns=BENCHMARKS)
 # compute mean accuracy across the selected benchmarks for each model
-# (skip NaNs automatically)
 df["mean_accuracy"] = df.mean(axis=1)
 # sort models by descending mean accuracy
 df = df.sort_values("mean_accuracy", ascending=False)
@@ -121,15 +120,14 @@ print(df)
 # ------------------------
 # PLOT HEATMAP
 # ------------------------
-#plt.figure(figsize=(7, 7))
 sns.set(context="notebook", style="white")
 
-plt.figure(figsize=(7,7))  # adapt height to number of models
+plt.figure(figsize=(7,7))  
 
 
 # Choose cmap and annot formatting
-cmap = "viridis"   # change to your preferred colormap
-# draw heatmap with annotations and row labels in the new order
+cmap = "viridis"   
+
 ax = sns.heatmap(
     heat_df,
     annot=True,

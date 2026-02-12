@@ -77,7 +77,6 @@ def extract_model_name(filename):
 # COLLECT ACCURACIES BY SUBTYPE
 # ------------------------
 # We'll collect a list of per-run accuracies for each (model, subtype).
-# structure: acc_accumulator[model][subtype] = [acc_run1, acc_run2, ...]
 acc_accumulator = {}
 
 # find files for the selected benchmarks
@@ -158,7 +157,7 @@ print("\nMean accuracy by model × subtype:")
 print(df_subtypes)
 
 # ------------------------
-# Prepare for clustering: fill NaNs per-column with column mean
+# Prepare for heatmap plotting: sort by mean accuracy across subtypes (descending)
 # ------------------------
 df_for_plot = df_subtypes.copy()
 
@@ -179,7 +178,7 @@ print("\nMean accuracy by model × subtype (sorted by overall mean desc):")
 print(df_sorted)
 
 # ------------------------
-# PLOT: cluster only by model (rows)
+# PLOT
 # ------------------------
 sns.set(context="notebook", style="white")
 

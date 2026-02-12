@@ -3,7 +3,6 @@ from src.utils import clean_text
 import re
 
 #### Helper functions for guideline linking in LLM output
-# Will be implemented in the streamlit frontend later
 
 # Map for RAG sources 
 SOURCE_MAP = {

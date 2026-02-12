@@ -34,7 +34,6 @@ class Manager:
         self.query_agent = QueryAgent(df.copy(),query_llm())
         self.plot_agent = PlotAgent(df.copy(),plotter_llm())
         self.stats_agent = StatsAgent(df.copy(),stats_llm())
-        # Pass search_fn (and optionally embed_fn) to GuidelineAgent
         self.guideline_agent = GuidelineAgent(llm_client = guideline_llm(), search_fn = self.search_fn, embed_fn = self.embed_fn, top_k = 10)
         self.error_agent = ErrorAgent(error_checker_llm())
 
@@ -71,7 +70,7 @@ class Manager:
             logger.info("Question asked and classified as 'guideline'. Routing to GuidelineAgent.")
             return self.guideline_agent.handle(question, messages=context)
         else:
-            logger.warning("Question type '%s' not recognized. Returning error.", qtype)
+            logger.warning("Question type not recognized. Returning error.", qtype)
             return({"type": "text",
                       "code": None,
                       "data": "Sorry, I couldn’t classify that question. Please try again or rephrase it."})
@@ -93,7 +92,7 @@ class Manager:
                 # Re-execute the corrected code
                 retry_result = agent.execute_code(corrected_code)
 
-                #### need to change this to add all errors to log but only return friendly messsage to user ###
+                #### add all errors to log but only return friendly messsage to user ###
                 ### User does not get to see error traceback or raw error message, but we log it for debugging and improvement purposes.
                 if retry_result["type"] == "error":
                     logger.error("Automatic correction failed: %s", retry_result["data"])

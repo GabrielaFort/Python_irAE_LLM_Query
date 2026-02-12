@@ -42,7 +42,7 @@ def normalize_dataframe(df, context="filtering", atol=0.01):
             if s.shape[1] == 1:
                 s = s.iloc[:, 0]
             else:
-                # Multi-column: stringify each row into a single string so it can be compared
+                # Multi-column: each row into a single string so it can be compared
                 s = s.astype(str).apply(lambda row: " | ".join(row.values.astype(str)), axis=1)
 
         # Now s should be a Series. If it's not, coerce to string Series.

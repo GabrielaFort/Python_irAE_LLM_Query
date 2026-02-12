@@ -132,7 +132,7 @@ def build_kb():
         for m in all_metadatas:
             f.write(json.dumps(m, ensure_ascii=False) + "\n")
 
-    # config manifest
+    # config 
     with open(os.path.join(OUTPUT_DIR, "index_config.json"), "w") as f:
         json.dump({"model_name": MODEL_NAME, "embed_dim": embed_dim, "chunk_size": CHUNK_SIZE, "chunk_overlap": CHUNK_OVERLAP}, f)
 

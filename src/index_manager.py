@@ -34,7 +34,6 @@ class IndexManager:
                 cfg = json.load(f)
                 self.embed_dim = cfg.get("embed_dim", None)
 
-        # load embed model lazily: do not load until embed_fn called
         return self
     
     def init_model(self):

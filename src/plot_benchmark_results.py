@@ -52,7 +52,6 @@ for path in files:
         sheet = f"run_{i}"
         df = pd.read_excel(path, sheet_name=sheet)
 
-        # accuracy = mean of score column (0/1)
         acc = df["score"].mean()
         run_scores.append(acc)
 

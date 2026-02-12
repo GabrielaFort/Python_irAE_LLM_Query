@@ -70,5 +70,5 @@ Responses are citation-aware and limited to retrieved guideline content to minim
 
 ## System Architecture
 
-<img src='./images/Figure_1.png' width='700' height='300'/>
+<img src='./images/Figure_1.png' width='700' height='700'/>
 

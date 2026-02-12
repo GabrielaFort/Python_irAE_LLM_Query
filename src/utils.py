@@ -19,7 +19,7 @@ def question_classifier_llm():
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model="glm-4.7:cloud",
+    myllm = LLMClient(model="gemini-3-flash-preview:cloud",
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
@@ -318,9 +318,6 @@ def run_with_timeout(code, safes, timeout=30):
     """
     Run code with a timeout using threading.
     
-    Limitation: Won't kill infinite loops like while True,
-    but will timeout on slow pandas/numpy/plotting operations.
-    
     Args:
         code: String of Python code to execute
         safes: Dictionary of safe variables/functions
@@ -398,7 +395,6 @@ if __name__ == "__main__":
     assert is_code_safe("result = df.groupby('column').sum()") == True
     assert is_code_safe("result = len(df)") == True
 
-
     # Test timeout with a slow operation (doesn't need imports)
     print("\n=== Testing timeout functionality ===")
     
@@ -413,11 +409,11 @@ result = total
     
     try:
         result = run_with_timeout(code, safes, timeout=2)
-        print("❌ Should have timed out")
+        print("Should have timed out")
     except TimeoutError as e:
-        print(f"✅ Timeout test passed: {e}")
+        print(f"Timeout test passed: {e}")
     except Exception as e:
-        print(f"❌ Different error: {e}")
+        print(f"Different error: {e}")
     
     # Test that fast code works
     print("\n=== Testing fast code execution ===")
@@ -427,11 +423,11 @@ result = total
     try:
         result = run_with_timeout(code, safes, timeout=5)
         if result == 4:
-            print(f"✅ Fast code test passed: result = {result}")
+            print(f"Fast code test passed: result = {result}")
         else:
-            print(f"❌ Wrong result: {result}")
+            print(f"Wrong result: {result}")
     except Exception as e:
-        print(f"❌ Fast code failed: {e}")
+        print(f"Fast code failed: {e}")
     
     
   

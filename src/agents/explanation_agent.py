@@ -37,7 +37,7 @@ class ExplanationAgent:
         """
         system_prompt = f"""
 Given a user's question and the Python code that was generated to answer the question,
-provide a brief, clear explantion of what the analysis does.
+provide a brief, clear explantaion of what the analysis does.
 
 Rules:
 - Keep it 1-2 sentences maximum.
@@ -63,7 +63,7 @@ Explanation: "I checked whether the distribution of different irAE types varies 
         if not last_code:
             return ""
         
-        full_messages = [{"role": "system", "content": system_prompt},{"role": "user", "content": f"Question: {last_question}\nCode:\n{last_code}\n\nExplanation:"}]
+        full_messages = [{"role": "system", "content": system_prompt},{"role": "user", "content": f"Question:{last_question}\nCode:{last_code}\n\nExplanation:"}]
 
         # Generate explanation
         explanation = self.llm_client.generate(messages=full_messages)

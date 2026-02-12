@@ -15,7 +15,7 @@ PDFS = {
 }
 
 MODEL_NAME = "NeuML/pubmedbert-base-embeddings" # sbert style pubmedbert fine tuned for sentence embeddings
-OUTPUT_DIR = "./knowledge_base"   # match your utils.load_kb default "src/knowledge_base"
+OUTPUT_DIR = "./knowledge_base"   
 CHUNK_SIZE = 2000
 CHUNK_OVERLAP = 250
 
@@ -122,7 +122,7 @@ def build_kb():
     print("Embedding chunks...")
     embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=True, normalize_embeddings=True)
 
-    # build FAISS inner product index (works as cosine because vectors normalized)
+    # build FAISS inner product index
     index = faiss.IndexFlatIP(embed_dim)
     index.add(embeddings)
     faiss.write_index(index, os.path.join(OUTPUT_DIR, "faiss.index"))

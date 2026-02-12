@@ -124,12 +124,10 @@ def benchmark_question_classifier(file_path, model_name, n_runs=5):
         
 
 if __name__ == "__main__":
-    #model_list = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
-    #                "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
-    #               "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
-    #                "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
-    model_list = ["deepseek-v3.2:cloud"]
-    
+    model_list = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
+                    "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",
+                   "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
+                    "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
     
     for model in model_list:
         print(f"\n{'='*60}\nBenchmarking model: {model}\n{'='*60}")

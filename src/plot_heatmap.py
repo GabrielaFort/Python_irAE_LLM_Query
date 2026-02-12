@@ -106,10 +106,16 @@ for benchmark in BENCHMARKS:
 df = pd.DataFrame.from_dict(acc_dict, orient="index")
 # order columns as BENCHMARKS, fill missing with NaN (or 0 if you prefer)
 df = df.reindex(columns=BENCHMARKS)
-# optionally sort models alphabetically
-df = df.sort_index()
+# compute mean accuracy across the selected benchmarks for each model
+# (skip NaNs automatically)
+df["mean_accuracy"] = df.mean(axis=1)
+# sort models by descending mean accuracy
+df = df.sort_values("mean_accuracy", ascending=False)
 
-print("Mean accuracy table (models x benchmarks):")
+# optionally drop the mean column from the heatmap data and keep it for annotations
+heat_df = df.drop(columns=["mean_accuracy"])
+
+print("Mean accuracy table (models x benchmarks), sorted by overall mean desc:")
 print(df)
 
 # ------------------------
@@ -118,26 +124,28 @@ print(df)
 #plt.figure(figsize=(7, 7))
 sns.set(context="notebook", style="white")
 
+plt.figure(figsize=(7,7))  # adapt height to number of models
+
+
 # Choose cmap and annot formatting
 cmap = "viridis"   # change to your preferred colormap
-ax = sns.clustermap(
-    df,
+# draw heatmap with annotations and row labels in the new order
+ax = sns.heatmap(
+    heat_df,
     annot=True,
     fmt=".2f",
     linewidths=0.5,
     linecolor="white",
-    figsize = (7,7),
     cmap=cmap,
     vmin=0.0,
     vmax=1.0,
     cbar_kws={"label": "Mean accuracy"},
-    row_cluster = True, 
-    col_cluster=False
 )
 
-#ax.set_ylabel("Model")
-#ax.set_xlabel("Benchmark")
-#ax.set_title("Mean accuracy across runs (averaged over replicates)")
+# tighten up labels / title
+ax.set_ylabel("")
+ax.set_xlabel("Benchmark")
+ax.set_title("Mean accuracy across runs (models ordered by overall mean, desc)")
 
 plt.tight_layout()
 plt.savefig(out_path, format="pdf", bbox_inches="tight")

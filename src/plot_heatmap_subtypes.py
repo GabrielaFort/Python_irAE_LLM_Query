@@ -154,7 +154,7 @@ for m in models:
     results.append(row)
 
 df_subtypes = pd.DataFrame(results, index=models, columns=SUBTYPE_ORDER)
-print("\nMean accuracy by model × subtype (before filling NaNs):")
+print("\nMean accuracy by model × subtype:")
 print(df_subtypes)
 
 # ------------------------
@@ -165,23 +165,45 @@ df_for_plot = df_subtypes.copy()
 print("\nMean accuracy by model × subtype:")
 print(df_for_plot)
 
+# Compute model-wise mean 
+# mean across columns, skipping NaNs (so models missing a subtype are averaged over available ones)
+df_subtypes["mean_accuracy"] = df_subtypes.mean(axis=1, skipna=True)
+
+# sort by descending mean accuracy
+df_sorted = df_subtypes.sort_values("mean_accuracy", ascending=False)
+
+# keep heatmap data (drop the mean column)
+heat_df = df_sorted.drop(columns=["mean_accuracy"])
+
+print("\nMean accuracy by model × subtype (sorted by overall mean desc):")
+print(df_sorted)
+
 # ------------------------
 # PLOT: cluster only by model (rows)
 # ------------------------
-g = sns.clustermap(
-    df_for_plot,
-    row_cluster=True,
-    col_cluster=False,
-    cmap="viridis",
+sns.set(context="notebook", style="white")
+
+plt.figure(figsize=(7,7)) 
+
+ax = sns.heatmap(
+    heat_df,
     annot=True,
+    fmt=".2f",
+    linewidths=0.5,
+    linecolor="white",
+    cmap="viridis",
     vmin=0.0,
     vmax=1.0,
-    fmt=".2f",
-    figsize = (7,7),
-    cbar_kws={"label": "Mean accuracy"}
+    cbar_kws={"label": "Mean accuracy"},
 )
 
-# save + show
+# formatting
+ax.set_ylabel("")  # leave model labels as yticklabels
+ax.set_xlabel("Subtype")
+ax.set_title("Mean accuracy by subtype (models ordered by overall mean, desc)")
+
+plt.tight_layout()
 plt.savefig(out_path, format="pdf", bbox_inches="tight")
 plt.show()
 print(f"\nHeatmap saved to: {out_path}")
+

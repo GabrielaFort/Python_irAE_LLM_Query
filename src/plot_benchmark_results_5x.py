@@ -10,7 +10,7 @@ import seaborn as sns
 # CONFIG
 # ------------------------
 DATA_DIR = "../results"        # folder with Excel files
-BENCHMARK = "stats"     # matches *_plot_*.xlsx
+BENCHMARK = "classifier"     # matches *_plot_*.xlsx
 RUNS = 5               # run_1 ... run_5
 OUT_DIR = "../results/plots"  # where to save plot
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -104,7 +104,7 @@ for i, scores in enumerate(all_scores, start=1):
 plt.xticks(rotation=45, ha="right")
 plt.ylabel("Accuracy")
 plt.title(f"Accuracy across replicates ({BENCHMARK})", pad=20)
-plt.ylim(0, 1)
+plt.ylim(0.4, 1)
 plt.grid(axis="y", alpha=0.3)
 
 plt.tight_layout()

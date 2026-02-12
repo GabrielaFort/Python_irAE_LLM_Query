@@ -131,103 +131,6 @@ def dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01):
         return 1
 
 
-
-# def filtering_eval(gold_result, llm_result, atol=0.01):
-#     """
-#     Evaluate 'filtering' outputs (subset-style DataFrames).
-#     Requires identical rows (ignoring order) and same set of columns.
-#     Numeric quantization absorbs float/int differences.
-#     1-column outputs are name-tolerant.
-#     """
-#     def to_df(x):
-#         if isinstance(x, pd.DataFrame): return x.copy()
-#         if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
-#         if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
-#         return pd.DataFrame({"value": [x]})
-
-#     gold, llm = to_df(gold_result), to_df(llm_result)
-#     gold.columns = [str(c).strip().lower() for c in gold.columns]
-#     llm.columns = [str(c).strip().lower() for c in llm.columns]
-
-#     # Align columns if both are single-column or same set
-#     if set(gold.columns) != set(llm.columns):
-#         if gold.shape[1] == 1 and llm.shape[1] == 1:
-#             llm.columns = gold.columns
-#         else:
-#             return 0
-#     llm = llm[gold.columns]
-
-#     gold_s = normalize_dataframe(gold, "filtering", atol)
-#     llm_s  = normalize_dataframe(llm,  "filtering", atol)
-
-#     if gold_s.shape != llm_s.shape:
-#         return 0
-
-#     # Row-agnostic comparison
-#     sort_cols = sorted(gold_s.columns)
-
-#     gold_sorted = gold_s.sort_values(by=sort_cols).reset_index(drop=True)
-#     llm_sorted  = llm_s.sort_values(by=sort_cols).reset_index(drop=True)
-
-#     return int(gold_sorted.equals(llm_sorted))
-
-
-# def grouping_eval(gold_result, llm_result, atol=0.1):
-#     """
-#     Evaluate 'grouping' outputs (aggregated summaries).
-#     Requires same columns & row count.
-#     Allows rounding/float precision differences.
-#     Compares after row sorting and numeric tolerance.
-#     """
-#     def to_df(x):
-#         if isinstance(x, pd.DataFrame): return x.copy()
-#         if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
-#         if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
-#         return pd.DataFrame({"value": [x]})
-
-#     gold, llm = to_df(gold_result), to_df(llm_result)
-#     gold.columns = [str(c).strip().lower() for c in gold.columns]
-#     llm.columns  = [str(c).strip().lower() for c in llm.columns]
-
-#     if set(gold.columns) != set(llm.columns):
-#         if gold.shape[1] == 1 and llm.shape[1] == 1:
-#             llm.columns = gold.columns
-#         else:
-#             return 0
-#     llm = llm[gold.columns]
-
-#     gold_s = normalize_dataframe(gold, "grouping", atol)
-#     llm_s  = normalize_dataframe(llm,  "grouping", atol)
-
-#     if gold_s.shape != llm_s.shape:
-#         return 0
-
-#     # Sort both for row-agnostic comparison
-#     sort_cols = list(gold_s.columns)
-#     gold_s, llm_s = gold_s.sort_values(by=sort_cols).reset_index(drop=True), llm_s.sort_values(by=sort_cols).reset_index(drop=True)
-
-#     num_cols = gold_s.select_dtypes(include=[np.number]).columns
-
-#     for c in num_cols:
-#         g = pd.to_numeric(gold_s[c], errors="coerce")
-#         l = pd.to_numeric(llm_s[c], errors="coerce")
-
-#         # Round both sides to a consistent precision (e.g., 2 decimals)
-#         g_rounded = g.round(2)
-#         l_rounded = l.round(2)
-
-#         # Compare with a generous tolerance
-#         if not np.allclose(g_rounded, l_rounded, atol=max(atol, 0.5), equal_nan=True):
-#             return 0
-
-#     text_cols = [c for c in gold_s.columns if c not in num_cols]
-#     for c in text_cols:
-#         if not gold_s[c].fillna("").equals(llm_s[c].fillna("")):
-#             return 0
-
-#     return 1
-
-
 def count_eval(gold_result, llm_result):
     '''
     Evaluate count-style queries by comparing LLM result to gold standard.
@@ -448,8 +351,8 @@ def invalid_eval(llm_result):
     return 1
 
 
-# Now need to generate LLM code using query agent
-# Instead of sending question through question classifier, just call it a 'query' type
+# Now need to generate LLM code using different modules
+# Instead of sending question through question classifier, just call the type
 def run_agent(question,model,agent,temp):
     '''
     Given a question string, use the QueryAgent to generate and execute code.
@@ -458,7 +361,7 @@ def run_agent(question,model,agent,temp):
     # First, read in and clean dataset using function from app.py
     df = load_data()
 
-    # Instantiate query agent
+    # Instantiate llm client
     myllm = LLMClient(model=model,
                     api_url="https://ollama.com",
                     temperature=temp,
@@ -467,7 +370,7 @@ def run_agent(question,model,agent,temp):
     # Generate summary for df for prompt
     summary = summarize_dataframe(df)
 
-    # Instantiate query agent
+    # Instantiate agent
     if agent == 'query':
         agent = QueryAgent(df, myllm)
     elif agent == 'stats':
@@ -481,7 +384,7 @@ def run_agent(question,model,agent,temp):
         try:
             code = agent.handle(question, summary)
             break
-        except RuntimeError as e:  # or requests.exceptions.RequestException
+        except RuntimeError as e:  
             print(f"LLM call failed (attempt {attempt}/{max_attempts}): {e}")
             if attempt == max_attempts:
                 raise
@@ -719,7 +622,7 @@ if __name__ == "__main__":
     benchmark_set = "stats"  # Choose from "query", "stats", "plot"
 
     for model in models_to_test:
-        main(n=1, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
+        main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
         print(f"Completed {benchmark_set} benchmarking for model: {model}")
 
 

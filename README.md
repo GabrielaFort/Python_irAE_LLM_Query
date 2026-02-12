@@ -60,9 +60,9 @@ The system automatically:
 
 Clinical questions about irAE management are answered using retrieval-augmented generation (RAG), grounded strictly in:
 
-- [ASCO guidelines] (https://ascopubs.org/doi/10.1200/JCO.21.01440)  
-- [NCCN guidelines] (https://jnccn.org/view/journals/jnccn/18/3/article-p230.xml?rskey=3SdtH4&result=6&print&content=pdf-7606) 
-- [SITC guidelines] (https://jitc.bmj.com/content/11/3/e006398)
+- [ASCO guidelines](https://ascopubs.org/doi/10.1200/JCO.21.01440)  
+- [NCCN guidelines](https://jnccn.org/view/journals/jnccn/18/3/article-p230.xml?rskey=3SdtH4&result=6&print&content=pdf-7606) 
+- [SITC guidelines](https://jitc.bmj.com/content/11/3/e006398)
 
 ---
 

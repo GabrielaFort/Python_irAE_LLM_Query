@@ -3,4 +3,5 @@ __pycache__/
 results
 logs
 irae-llm.tar
+.vscode/
 

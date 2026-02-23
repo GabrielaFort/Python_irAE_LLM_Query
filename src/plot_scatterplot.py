@@ -1,3 +1,4 @@
+# Create scatter plot of parameter size versus average accuracy across benchmarks, and compute Pearson correlation.
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -15,7 +16,6 @@ mpl.rcParams.update({
     "font.family": "Arial",
     "font.size": 9,
 })
-
 
 # Load data
 df = pd.read_csv("../results/parameters_vs_accuracy.csv")
@@ -41,9 +41,6 @@ sns.scatterplot(
     s=80
 )
 
-# Log scale for parameter count
-#plt.xscale("log")
-
 # Labels and title
 plt.xlabel("Parameter Count (Billions)")
 plt.ylabel("Average Accuracy")
@@ -52,5 +49,5 @@ plt.title("Average Accuracy vs Parameter Count")
 plt.tight_layout()
 plt.savefig(out_path, format="pdf", bbox_inches="tight")
 plt.show()
-print(f"Heatmap saved to: {out_path}")
+print(f"Scatter plot saved to: {out_path}")
 

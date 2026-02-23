@@ -1,4 +1,4 @@
-# Class for agent that generates and executes plotting code based on user question classification
+# Class for plotting LLM module that generates and executes plotting code based on user question classification
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for safe plotting
 
@@ -140,6 +140,7 @@ class PlotAgent:
             }
 
             # execute the generated code (it should assign the output to variable `result`)
+            # First check if code is safe to execute using keywords and pattern matching (utils.py)
             if not is_code_safe(code):
                 return {
                     "type": "text",
@@ -153,6 +154,7 @@ class PlotAgent:
                 keep_fignums = set()  # Track fignums to keep (e.g., for venn diagrams)
             
                 try:
+                    # Run in separate thread with timeout to prevent infinite loops or excessively long execution 
                     result = run_with_timeout(code, safes, timeout = 30)
 
                     # Retrieve result if defined

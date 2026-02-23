@@ -1,4 +1,4 @@
-# Class for agent that fixes code that raised an error
+# Class for LLM module that fixes code that raised an error
 from src.utils import clean_code
 
 class ErrorAgent:

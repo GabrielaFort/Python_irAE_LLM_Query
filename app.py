@@ -31,7 +31,7 @@ logger.info(
     st.session_state["rerun_count"],
 )
 
-# Set up streamlit frontend for python LLM query of irae data
+# Set up streamlit frontend 
 st.set_page_config(
     page_title = "irAE Dataset LLM Assistant",
     layout = "wide",
@@ -39,6 +39,7 @@ st.set_page_config(
 )
 
 # Initialize session state
+# Use to track conversation history, last results, pending questions for reruns, and explanations.
 if "history" not in st.session_state:
     st.session_state["history"] = []
 
@@ -74,7 +75,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Set a single global default (optional)
+# Set a single global default 
 pio.templates.default = "seaborn"
 
 # Set default color scheme
@@ -161,6 +162,7 @@ def apply_default_style(fig):
 # Matplot lib venn viagram style
 plt.rcParams.update({"font.size": 14})
 
+#----------------# Main App Code #------------------------
 # load cleaned data
 @st.cache_data
 def load_data():
@@ -218,16 +220,7 @@ with col2:
 st.caption("Below is a preview of the FAERS irAE dataset:")
 st.dataframe(df.head(10), width='stretch', hide_index=True)
 
-# Download section
-#csv = df.to_csv(index=False).encode('utf-8')
-#st.download_button(
-#    label="Download Full Dataset (CSV)",
-#    data=csv,
-#    file_name="irae_faers_dataset.csv",
-#    mime="text/csv",
-#    help="Download the entire dataset as a CSV file."
-#)
-
+# Option to view column descriptions in a collapsible section
 with st.expander("View column descriptions"):
     st.markdown("""
     - **patient_id**: Unique identifier for each case 
@@ -266,13 +259,14 @@ with st.form("query_form", clear_on_submit=False, enter_to_submit=True):
 
 # Reset session button
 if st.button("Reset Conversation"):
+    # Clear session state and start fresh - no conversation context sent to LLMs
     st.session_state["history"] = []
     st.session_state["last_result"] = None
     st.session_state["pending_question"] = None 
     st.session_state["last_explanation"] = None
     st.rerun()
 
-# Handle rerun logic
+# Handle rerun logic if user clicks "rerun" on a previous question. Reprocess with context. 
 if st.session_state["rerun_query"]:
     question = st.session_state["rerun_query"]
     st.session_state["rerun_query"] = None
@@ -354,6 +348,7 @@ if result is not None:
         code_text = str(res_code)
 
     # Tabs for organizing results
+    # If code generated, show it in a code tab. If not, just show the result tab.
     if code_text:
         tab_result, tab_code = st.tabs(["Result", "Code"])
     else:
@@ -389,6 +384,7 @@ if result is not None:
             df = res_data.copy()
             for col in df.select_dtypes(include=["float", "float64"]).columns:
                 df[col] = df[col].map(
+                    # handle floats by formatting to 6 decimal places and stripping trailing zeros, but leave NaNs as-is
                     lambda x: f"{x:.6f}".rstrip("0").rstrip(".") if pd.notna(x) else x
                     )
             st.dataframe(df,
@@ -398,6 +394,7 @@ if result is not None:
 
         elif res_type == "number":
             if isinstance(res_data, (float, np.floating)):
+                # Format floats to 6 decimal places and strip trailing zeros, but leave integers and other types as-is
                 st.metric(label="Result", value = f"{res_data:.6f}".rstrip("0").rstrip("."))
             else:
                 st.metric(label="Result", value = res_data)
@@ -413,7 +410,7 @@ if result is not None:
                 st.markdown(html, unsafe_allow_html=True)
 
             else:
-                # non-string results (dict, list, etc.): leave as-is
+                # non-string results (dict, list, etc): leave as-is
                 st.write(res_data)
 
     if tab_code:
@@ -425,7 +422,7 @@ else:
     st.info("Enter a question above to get started.")
 
 
-# Conversation history display
+# Conversation history display with rerun buttons for each turn
 if st.session_state["history"]:
     st.markdown("---")
     st.subheader("Session conversation history")

@@ -1,4 +1,5 @@
-# Class for statistics expert agent
+# Class for statistics LLM module that generates and executes statistical analysis code based on user question classification
+
 import pandas as pd 
 import numpy as np
 from scipy import stats
@@ -9,7 +10,7 @@ from collections import Counter
 class StatsAgent:
     """
     Handles statistical analysis requests. 
-    Uses LLM to suggest statistical tests in python code based on dataset sumary and user question.
+    Uses LLM to suggest statistical tests in python code based on dataset summary and user question.
     Returns a tabular or numeric result.
     Uses conversation history for context
     """
@@ -135,6 +136,7 @@ class StatsAgent:
                      "__builtins__": safe_builtins,"df" : self.df.copy()} 
 
             # execute the generated code (it should assign the output to variable `result`)
+            # First check if code is safe to execute using keywords and pattern matching (utils.py)
             if not is_code_safe(code):
                 return {
                     "type": "text",
@@ -142,6 +144,7 @@ class StatsAgent:
                     "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
                 }
             
+            # Run in separate thread with timeout to prevent infinite loops or excessively long execution
             result = run_with_timeout(code, safes, timeout = 30)
 
             if result is None:

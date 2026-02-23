@@ -14,6 +14,7 @@ class IndexManager:
         self.embed_dim = None
 
     def load(self):
+        # Check if files output from build_pdf_kb.py exist at kb_dir
         idx_path = os.path.join(self.kb_dir, "faiss.index")
         meta_path = os.path.join(self.kb_dir, "metadatas.jsonl")
         cfg_path = os.path.join(self.kb_dir, "index_config.json")
@@ -21,14 +22,17 @@ class IndexManager:
         if not os.path.exists(idx_path) or not os.path.exists(meta_path):
             raise FileNotFoundError("Knowledge base not built. Run build_pdf_kb.py first.")
 
+        # Load FAISS index into memory
         self.index = faiss.read_index(idx_path)
-
+        
+        # Load metadata file (jsonl)
         metas = []
         with open(meta_path, "r", encoding="utf-8") as f:
             for line in f:
                 metas.append(json.loads(line.strip()))
         self.metadatas = metas
 
+        # Load optional config and store embedding dim if saved
         if os.path.exists(cfg_path):
             with open(cfg_path, "r") as f:
                 cfg = json.load(f)
@@ -37,6 +41,7 @@ class IndexManager:
         return self
     
     def init_model(self):
+        # Loads embedding model when needed and retrieves embedding dimension from model
         if self.model is None:
             self.model = SentenceTransformer(self.model_name)
             self.embed_dim = self.model.get_sentence_embedding_dimension()
@@ -48,6 +53,7 @@ class IndexManager:
         Returns: normalized numpy vector
         """
         self.init_model()
+        # Embed a single text query
         emb = self.model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
         return emb  
     

@@ -104,14 +104,14 @@ for benchmark in BENCHMARKS:
 # ------------------------
 # rows = models, cols = benchmarks
 df = pd.DataFrame.from_dict(acc_dict, orient="index")
-# order columns as BENCHMARKS, fill missing with NaN (or 0 if you prefer)
+# order columns as BENCHMARKS
 df = df.reindex(columns=BENCHMARKS)
 # compute mean accuracy across the selected benchmarks for each model
 df["mean_accuracy"] = df.mean(axis=1)
 # sort models by descending mean accuracy
 df = df.sort_values("mean_accuracy", ascending=False)
 
-# optionally drop the mean column from the heatmap data and keep it for annotations
+# drop the mean column from the heatmap data and keep it for annotations
 heat_df = df.drop(columns=["mean_accuracy"])
 
 print("Mean accuracy table (models x benchmarks), sorted by overall mean desc:")

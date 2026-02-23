@@ -1,6 +1,6 @@
 class QuestionClassifier:
     """
-    Classifies user questions into categories: 'query' or 'plot'.
+    Classifies user questions into categories: 'tableqa' or 'plot' or 'stats' or 'guideline'.
     Uses LLM to interpret question if no heuristic matches are found.
     """
     def __init__(self, llm_client):
@@ -26,7 +26,6 @@ class QuestionClassifier:
 
 
         # Fallback to LLM classification
-
         if messages is None:
             messages = []
 

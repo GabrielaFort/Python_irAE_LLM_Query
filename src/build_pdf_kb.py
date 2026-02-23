@@ -13,6 +13,7 @@ PDFS = {
     "NCCN": "./knowledge_base/NCCN_guidelines.pdf",
     "ASCO": "./knowledge_base/ASCO_guidelines.pdf"
 }
+# used adobe acrobat to extract text from images of these PDFs prior to processing
 
 MODEL_NAME = "NeuML/pubmedbert-base-embeddings" # sbert style pubmedbert fine tuned for sentence embeddings
 OUTPUT_DIR = "./knowledge_base"   
@@ -65,6 +66,7 @@ def split_into_sections(md_text, doc_id):
     return sections
 
 # Overlapping chunker (character-based)
+# Can set both chunk size and overlap size
 def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     text = text.strip()
     if len(text) <= chunk_size:

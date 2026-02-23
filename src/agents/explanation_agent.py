@@ -1,4 +1,4 @@
-
+# Class for LLM module that generates a plain language explanation of what the generated code does, based on the previous question and generated code.
 class ExplanationAgent:
     def __init__(self, llm_client):
         self.llm_client = llm_client
@@ -8,17 +8,21 @@ class ExplanationAgent:
         last_question = None
 
         # Find most recent assistant code generation and user question
+        # Most recent = last occurance in messages list
         for msg in reversed(messages):
             role = msg.get("role")
             content = msg.get("content")
 
+            # Find last assistant message
             if last_code is None and role == "assistant" and content:
                 last_code = content
                 continue
+            # Find last user message before that assistant message
             if last_code is not None and role == "user" and content:
                 last_question = content
                 break
 
+        # Fallback logic - return most recent user message in the whole history
         if last_question is None:
             for msg in reversed(messages):
                 if msg.get("role") == "user" and msg.get("content"):
@@ -61,6 +65,7 @@ Explanation: "I checked whether the distribution of different irAE types varies 
         last_question, last_code = self._extract_last_turn(messages)
 
         if not last_code:
+            # If we can't find any code in the history, we can't generate an explanation. Return empty string.
             return ""
         
         full_messages = [{"role": "system", "content": system_prompt},{"role": "user", "content": f"Question:{last_question}\nCode:{last_code}\n\nExplanation:"}]

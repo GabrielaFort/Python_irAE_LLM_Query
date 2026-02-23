@@ -1,5 +1,5 @@
-# This class will manage different agents and route questions accordingly
-# It uses the QuestionClassifier to determine the type of question
+# This class will manage different module LLMs and route questions accordingly
+# It uses the QuestionClassifier to determine the type of question before routing to appropriate modules.
 
 from src.question_classifier import QuestionClassifier
 from src.utils import question_classifier_llm, plotter_llm, query_llm, stats_llm, error_checker_llm, guideline_llm, summarize_dataframe

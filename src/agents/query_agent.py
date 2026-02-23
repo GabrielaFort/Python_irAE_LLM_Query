@@ -1,4 +1,4 @@
-# Class for agent that generates and executes query code based on user question classification
+# Class for tableqa LLM module that generates and executes query code based on user question classification
 import pandas as pd
 import numpy as np
 import traceback
@@ -118,6 +118,7 @@ class QueryAgent:
                      "__builtins__": safe_builtins,"df" : self.df.copy()}
 
             # execute the generated code (it should assign the output to variable `result`)
+            # First check if code is safe to execute using keywords and pattern matching (utils.py)
             if not is_code_safe(code):
                 return {
                     "type": "text",
@@ -125,6 +126,7 @@ class QueryAgent:
                     "data": "The generated code may contain unsafe operations and will not be executed. Please try again."
                 }
             
+            # Run in separate thread with timeout to prevent infinite loops or excessively long execution
             result = run_with_timeout(code, safes, timeout = 30)
 
             if result is None:
@@ -134,7 +136,7 @@ class QueryAgent:
                     "data": "No variable named 'result' found. Please ensure your code assigns output to 'result'."
                 }
             
-            # Handle potential other result types 
+            # Handle other result types 
             elif isinstance(result, (int, float, np.number, np.generic)):
                 display_data = float(result)
                 type_str = "number"

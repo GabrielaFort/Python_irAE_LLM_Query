@@ -11,15 +11,14 @@ import plotly.graph_objects as go
 from matplotlib_venn._common import VennDiagram
 from matplotlib_venn import venn2, venn3
 
-
 from src.agents.query_agent import QueryAgent
 from src.agents.stats_agent import StatsAgent
 from src.agents.plot_agent import PlotAgent
 from src.llm_client import LLMClient
 from src.utils import summarize_dataframe, load_data
 
-# Functions to benchmark query agent
-# These functions serve to evaluate LLM-generated responses for different query types
+# Functions to benchmark analytical modules
+# These functions serve to evaluate LLM-generated responses for different query types within tableQA, statistics, and plotting modules
 
 def normalize_dataframe(df, context="filtering", atol=0.01):
     """
@@ -78,18 +77,25 @@ def dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01):
         llm_result: LLM-generated result
         eval_type: "filtering" or "grouping"
         atol: Absolute tolerance for numeric comparison
+
+    Returns:
+        1 if LLM result matches gold result according to eval rules, else 0
     """
     def to_df(x):
+        # Convert different input types to pandas DF
         if isinstance(x, pd.DataFrame): return x.copy()
         if isinstance(x, pd.Series): return x.reset_index(drop=True).to_frame()
         if isinstance(x, (list, np.ndarray)): return pd.DataFrame({"value": np.array(x).flatten()})
         return pd.DataFrame({"value": [x]})
 
     gold, llm = to_df(gold_result), to_df(llm_result)
+
+    # Normalize column names - convert to string, strip, lower
     gold.columns = [str(c).strip().lower() for c in gold.columns]
     llm.columns = [str(c).strip().lower() for c in llm.columns]
 
-    # Column alignment
+    # Column alignment, if sets of column names differ, handle simple case of both being single-column DFs
+    # by forcing the LLM col to use gold col name, else fail (return 0)
     if set(gold.columns) != set(llm.columns):
         if gold.shape[1] == 1 and llm.shape[1] == 1:
             llm.columns = gold.columns
@@ -97,23 +103,27 @@ def dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01):
             return 0
     llm = llm[gold.columns]
 
-    # Normalize based on eval type
+    # Normalize based on eval type (question subtype)
     context = "filtering" if eval_type == "filtering" else "grouping"
     gold_s = normalize_dataframe(gold, context, atol)
     llm_s = normalize_dataframe(llm, context, atol)
 
+    # If normalized DFs have different shapes (rows or cols) they fail
     if gold_s.shape != llm_s.shape:
         return 0
 
-    # Sort for row-agnostic comparison
+    # Sort by columns and then reset index
     sort_cols = sorted(gold_s.columns)
     gold_sorted = gold_s.sort_values(by=sort_cols).reset_index(drop=True)
     llm_sorted = llm_s.sort_values(by=sort_cols).reset_index(drop=True)
 
     # Different comparison logic based on type
+    # For filtering, require exact equality between sorted frames
+    # True only if shape, dtypes, and values are equal
     if eval_type == "filtering":
         return int(gold_sorted.equals(llm_sorted))
     
+    # For grouping, allow numeric columns to match within tolerance and require exact text equality
     else:  # grouping
         num_cols = gold_sorted.select_dtypes(include=[np.number]).columns
         for c in num_cols:
@@ -128,6 +138,8 @@ def dataframe_eval(gold_result, llm_result, eval_type="filtering", atol=0.01):
         for c in text_cols:
             if not gold_sorted[c].fillna("").equals(llm_sorted[c].fillna("")):
                 return 0
+        
+        # If all numeric and text columns match according to rules - return success
         return 1
 
 
@@ -136,7 +148,11 @@ def count_eval(gold_result, llm_result):
     Evaluate count-style queries by comparing LLM result to gold standard.
     Returns 1 if they match (within tolerance), else 0.
     '''
+
+    # Extract single numeric value from various input types
     def extract_num(x):
+        # If x is a single-value DF or series, extract that value
+        # If it contains multiple values, it fails
         if isinstance(x, (pd.DataFrame, pd.Series)):
             vals = np.array(x.values).flatten()
             if len(vals) == 1:
@@ -144,6 +160,9 @@ def count_eval(gold_result, llm_result):
             else:
                 return None
         if isinstance(x, str):
+            # If x is a string, keep digits, decimal point, minus sign, commas
+            # Remove commas and try to convert to float 
+            # if this fails, then response fails
             x = ''.join(ch for ch in x if ch.isdigit() or ch in ['.','-',','])
             x = x.replace(',','')
         try:
@@ -157,6 +176,7 @@ def count_eval(gold_result, llm_result):
     if gold_num is None or llm_num is None:
         return 0
     
+    # Compare numbers with tolerance
     if np.isclose(gold_num, llm_num, atol=0.1):
         return 1
     
@@ -185,6 +205,7 @@ def stats_eval(gold_result, llm_result):
     stat_col = None
     pval_col = None
     for c in llm_df.columns:
+        # The df must have one column with a stat keyword and one col with a pvalue keyword
         c_lower = str(c).strip().lower()
         if any(keyword in c_lower for keyword in stat_col_candidates):
             stat_col = c
@@ -207,6 +228,7 @@ def stats_eval(gold_result, llm_result):
         llm_stat = llm_df.iloc[i][stat_col]
         llm_pval = llm_df.iloc[i][pval_col]
         try:
+            # Compare test statistic and p value within tolerance, if not similar enough, fail
             if not np.isclose(float(gold_stat), float(llm_stat), atol=0.1):
                 return 0
             if not np.isclose(float(gold_pval), float(llm_pval), atol=0.01):
@@ -279,7 +301,7 @@ def plot_data_eval(llm_plot_data, gold_plot_data):
 
     print(f"Both have same number of rows: {llm_plot_data.shape[0]}")
 
-    # --- Helper normalization for text values ---
+    # Helper normalization for text values 
     def normalize_text(series):
         return (
             series.astype(str)
@@ -289,7 +311,7 @@ def plot_data_eval(llm_plot_data, gold_plot_data):
             .fillna("__na__")
         )
 
-    # --- Now loop through gold columns and try to match to any LLM column ---
+    # Now loop through gold columns and try to match to any LLM column 
     for gold_col in gold_plot_data.columns:
         gold_series = gold_plot_data[gold_col]
         match_found = False
@@ -306,7 +328,7 @@ def plot_data_eval(llm_plot_data, gold_plot_data):
         for llm_col in llm_plot_data.columns:
             llm_series = llm_plot_data[llm_col]
 
-            # --- Numeric comparison ---
+            # Numeric comparison - sort both cols and compare with tolerance
             if pd.api.types.is_numeric_dtype(gold_series):
                 llm_num = pd.to_numeric(llm_series, errors="coerce").fillna(-99999).to_numpy()
 
@@ -318,7 +340,7 @@ def plot_data_eval(llm_plot_data, gold_plot_data):
                     match_found = True
                     break
 
-            # --- Text comparison ---
+            # Text comparison - compare text columns (case insensitive, whitespace insensitive, order insensitive, frequency sensitive)
             else:
                 llm_text = normalize_text(llm_series)
                 llm_counter = Counter(llm_text.tolist())
@@ -358,7 +380,7 @@ def run_agent(question,model,agent,temp):
     Given a question string, use the QueryAgent to generate and execute code.
     Returns the result dictionary from execute_code.
     '''
-    # First, read in and clean dataset using function from app.py
+    # First, read in and clean dataset using function from utils.py
     df = load_data()
 
     # Instantiate llm client
@@ -370,7 +392,7 @@ def run_agent(question,model,agent,temp):
     # Generate summary for df for prompt
     summary = summarize_dataframe(df)
 
-    # Instantiate agent
+    # Instantiate analytical module
     if agent == 'query':
         agent = QueryAgent(df, myllm)
     elif agent == 'stats':
@@ -389,7 +411,6 @@ def run_agent(question,model,agent,temp):
             if attempt == max_attempts:
                 raise
             time.sleep(2 ** attempt)  # exponential backoff
-    code = agent.handle(question, summary)
 
     # Execute code
     result = agent.execute_code(code)
@@ -460,7 +481,7 @@ def benchmark_agent(benchmark_cases, model, agent, temp):
 
         print(f"Processing question: {question}")
 
-        # Run agent
+        # Run question and extract result
         llm_result_dict = run_agent(question, model, agent, temp)
         llm_result = llm_result_dict.get('data', None)
         llm_type = llm_result_dict.get('type', None)
@@ -573,7 +594,7 @@ def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="
         benchmark: which benchmark sheet to use ("query", "stats", "plot")
         model_name: LLM model to test
     '''
-    # Load benchmark cases from Excel
+    # Assign sheet name based on benchmark, and temperature for each module LLM
     if benchmark == "query":
         sname = "table_qa_benchmark"
         agent = "query"
@@ -590,8 +611,10 @@ def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="
     # Read in set of benchmark cases
     df = pd.read_excel(benchmark_path, sheet_name=sname)
 
+    # Normalize col names
     df.columns = [c.strip().lower().replace(" ","_") for c in df.columns]
 
+    # Build list of benchmark cases
     benchmark_cases = []
 
     for idx, row in df.iterrows():
@@ -612,7 +635,7 @@ def main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark="
             ensure_text_file("text.txt", "test")
         
 
-# Example usage
+# Main flow to iterate through all models 
 if __name__ == "__main__":
     models_to_test = ["devstral-2:123b-cloud","gpt-oss:20b-cloud","gpt-oss:120b-cloud","qwen3-coder:480b-cloud",
                       "gemma3:27b-cloud","deepseek-v3.1:671b-cloud","glm-4.6:cloud","cogito-2.1:671b-cloud",

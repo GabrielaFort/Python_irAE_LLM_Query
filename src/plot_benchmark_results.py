@@ -59,7 +59,7 @@ for path in files:
     labels.append(model_name)
 
 # ------------------------
-# PLOT: BOX + DOTS
+# PLOT: BOX PLOT 
 # ------------------------
 plt.figure(figsize=(9, 6))
 

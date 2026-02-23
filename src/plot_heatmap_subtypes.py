@@ -35,7 +35,7 @@ def canonical_subtype(raw):
     if pd.isna(raw):
         return None
     s = str(raw).strip().lower()
-    # map plot-like types to "plot" if they contain the word 'plot'
+    # map plot-like types to "plot" 
     if s in ("pie","bar","line","scatter","histogram","box","heatmap","violin","histogram","donut"):
         return "plot"
     # grouping/ranking combination
@@ -76,7 +76,7 @@ def extract_model_name(filename):
 # ------------------------
 # COLLECT ACCURACIES BY SUBTYPE
 # ------------------------
-# We'll collect a list of per-run accuracies for each (model, subtype).
+# collect a list of per-run accuracies for each (model, subtype).
 acc_accumulator = {}
 
 # find files for the selected benchmarks

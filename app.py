@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utils import build_context, explanation_llm, setup_logging
+from src.utils import build_context, explanation_llm, setup_logging, load_custom_data
 from matplotlib_venn._common import VennDiagram
 from src.agents.guideline_agent import link_short_citations
 import urllib.parse
@@ -54,6 +54,10 @@ if "pending_question" not in st.session_state:
 
 if "rerun_query" not in st.session_state:
     st.session_state["rerun_query"] = None
+
+# Used to force-reset the upload widget when switching back to default dataset.
+if "upload_uploader_key" not in st.session_state:
+    st.session_state["upload_uploader_key"] = 0
 
 # Some custom styling
 st.markdown("""
@@ -163,11 +167,27 @@ def apply_default_style(fig):
 plt.rcParams.update({"font.size": 14})
 
 #----------------# Main App Code #------------------------
+
+# Setup app layout 
+st.title("irAE Dataset LLM Assistant")
+
+# Introduction section
+st.markdown("""
+Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
+
+Use this tool to:
+- Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
+- Generate plots or summaries of irAE patterns  
+- Automatically produce reproducible Python code
+- Explore your own custom safety datasets
+
+---
+""")
+
 # load cleaned data
 @st.cache_data
 def load_data():
     return pd.read_csv("data/irae_data_cleaned.csv")
-df = load_data()
 
 # Load FAISS index ONCE globally
 @st.cache_resource
@@ -183,30 +203,79 @@ def load_index_manager():
 
 shared_index = load_index_manager()
 
+#### NEW _ DATASET SELECTION TABS #######
+st.header("Dataset Selection")
+tab_default, tab_upload = st.tabs(["Use default dataset", "Upload CSV"])
+# Use default dataset tab
+with tab_default:
+    st.write("Using built-in irAE dataset from FAERS.")
+    if "df" not in st.session_state:
+        st.session_state["df"] = load_data()
+        st.session_state["df_source"] = "default"
+    if st.button("Use FAERS default dataset (refresh)"):
+        st.session_state["df"] = load_data()
+        st.session_state["df_source"] = "default"
+        # When user resets to default dataset, force manager re-initialization below
+        st.session_state["manager"] = None
+
+        # Force-reset the file uploader widget in the upload tab.
+        st.session_state["upload_uploader_key"] += 1
+        st.rerun()
+
+# Upload dataset tab
+with tab_upload:
+    st.write("Upload your own CSV file. The uploaded table will replace the dataset used by the rest of the app.")
+    uploader_key = f"upload_csv_{st.session_state['upload_uploader_key']}"
+    uploaded_file = st.file_uploader("Upload CSV", type=["csv"], accept_multiple_files=False, key=uploader_key)
+    if uploaded_file is not None:
+        try:
+            # Read CSV into dataframe. Allow pandas to infer encoding and separators.
+            uploaded_df = pd.read_csv(uploaded_file)
+            # Basic sanity checks: require at least 1 column and 1 row
+            if uploaded_df.shape[0] == 0 or uploaded_df.shape[1] == 0:
+                st.error("Uploaded CSV appears empty. Please check the file and try again.")
+            else:
+                st.success(f"Loaded uploaded CSV with {uploaded_df.shape[0]:,} rows and {uploaded_df.shape[1]:,} columns.")
+                st.session_state["df"] = load_custom_data(uploaded_df)
+                st.session_state["df_source"] = "upload"
+                # When user uploads a new dataset, force manager re-initialization below
+                st.session_state.pop("manager", None)
+        except Exception as e:
+            st.error(f"Failed to read uploaded CSV: {e}")
+            # fallback to default if reading fails
+            if "df" not in st.session_state:
+                st.session_state["df"] = load_data()
+                st.session_state["df_source"] = "default"
+
+# If no explicit selection stored, ensure default
+if "df" not in st.session_state:
+    st.session_state["df"] = load_data()
+    st.session_state["df_source"] = "default"
+
+# Local df variable 
+df = st.session_state["df"]
+
 # Instantiate session-specific manager
 if "manager" not in st.session_state:
     st.session_state["manager"] = Manager(df.copy(deep=True), shared_index_manager=shared_index)
+
+else:
+    # If the manager exists but the underlying df changed in session_state, re-init it.
+    # We detect this by a simple check: store last_df_shape in session_state
+    last_shape = st.session_state.get("manager_df_shape")
+    current_shape = (df.shape[0], df.shape[1])
+    if last_shape != current_shape:
+        st.session_state["manager"] = Manager(df.copy(deep=True), shared_index_manager=shared_index)
+
+# store current df shape for future change detection
+st.session_state["manager_df_shape"] = (df.shape[0], df.shape[1])
+
 m = st.session_state["manager"]
 
 # Instantiate session-specific explanation agent
 if "explanation_agent" not in st.session_state:
     st.session_state["explanation_agent"] = ExplanationAgent(explanation_llm())
 explanation_agent = st.session_state["explanation_agent"]
-
-# Setup app layout 
-st.title("irAE Dataset LLM Assistant")
-
-# Introduction section
-st.markdown("""
-Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
-
-Use this tool to:
-- Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
-- Generate plots or summaries of irAE patterns  
-- Automatically produce reproducible Python code
-
----
-""")
 
 # Data Overview Section
 st.header("Dataset Overview")
@@ -216,31 +285,38 @@ with col1:
     st.metric("Number of Records", f"{df.shape[0]:,}")
 with col2:
     st.metric("Number of Columns", f"{df.shape[1]}")
+with col3:
+    source = st.session_state.get("df_source","default")
+    st.caption(f"Data source: **{source}**")
 
-st.caption("Below is a preview of the FAERS irAE dataset:")
-st.dataframe(df.head(10), width='stretch', hide_index=True)
+if st.session_state["df_source"] == "upload":
+    st.caption("Below is a preview of your uploaded dataset.")
+elif st.session_state["df_source"] == "default":    
+    st.caption("Below is a preview of the FAERS irAE dataset:")
+st.dataframe(df, width='stretch', hide_index=True)
 
-# Option to view column descriptions in a collapsible section
-with st.expander("View column descriptions"):
-    st.markdown("""
-    - **patient_id**: Unique identifier for each case 
-    - **irae**: irAE(s) reported
-    - **irae_type**: Broader category of irAE
-    - **outcome**: Patient outcome 
-    - **ici_drug_name**: Immunotherapy drug(s) administered 
-    - **brand_name**: Brand name(s) of immunotherapy drug(s) administered  
-    - **drug_class**: Class of immunotherapy drug(s)
-    - **cancer_drug_name**: Other anti-cancer or chemotherapy drugs administered
-    - **combination status**: Whether immunotherapy was given in combination with other drugs
-    - **other_drug_name**: Other non-cancer and non-ici drugs administered
-    - **tumor_type**: Reported primary cancer
-    - **time_to_onset**: Weeks from drug start to irAE onset
-    - **age**: Patient age in years
-    - **age_group**: Groups by age range
-    - **sex**: Patient sex
-    - **quarter**: FAERS reporting quarter
-    - **year**: FAERS reporting year   
-    """)
+if st.session_state["df_source"] == "default":
+    # Option to view column descriptions in a collapsible section
+    with st.expander("View column descriptions"):
+        st.markdown("""
+        - **patient_id**: Unique identifier for each case 
+        - **irae**: irAE(s) reported
+        - **irae_type**: Broader category of irAE
+        - **outcome**: Patient outcome 
+        - **ici_drug_name**: Immunotherapy drug(s) administered 
+        - **brand_name**: Brand name(s) of immunotherapy drug(s) administered  
+        - **drug_class**: Class of immunotherapy drug(s)
+        - **cancer_drug_name**: Other anti-cancer or chemotherapy drugs administered
+        - **combination status**: Whether immunotherapy was given in combination with other drugs
+        - **other_drug_name**: Other non-cancer and non-ici drugs administered
+        - **tumor_type**: Reported primary cancer
+        - **time_to_onset**: Weeks from drug start to irAE onset
+        - **age**: Patient age in years
+        - **age_group**: Groups by age range
+        - **sex**: Patient sex
+        - **quarter**: FAERS reporting quarter
+        - **year**: FAERS reporting year   
+        """)
 
 st.markdown("---")
 
@@ -438,4 +514,3 @@ if st.session_state["history"]:
                 st.session_state["pending_question"] = turn['question']
                 st.session_state["rerun_query"] = turn['question']
                 st.rerun()
-

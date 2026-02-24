@@ -105,6 +105,28 @@ def load_data():
     return messy_data 
 
 
+def load_custom_data(df):
+
+    # replace empty strings with NaN
+    df.replace("", pd.NA, inplace=True)
+
+    # Change all "_" to "," so that rows with multiple entries are comma-separated always
+    #string_cols = df.select_dtypes(include='object').columns
+    #for col in string_cols:
+    #    df[col] = df[col].str.lower() # all lowercase to standardize
+
+    # Standardize any columns containing comma-separated values
+    for col in df.columns:
+
+    # Identify whether any columns contain comma-separated entries suggesting multiple values per row
+        if df[col].astype(str).str.contains(",").any():
+            df[col] = df[col].str.replace(r"\s*,\s*", ",", regex=True) # Ensure no spaces after commas
+            df[col] = df[col].str.strip() # Remove leading/trailing spaces
+            df[col] = df[col].str.replace(r"^,\s*|\s*,\s*$", "", regex=True) # Remove leading/trailing commas 
+
+    return df
+
+
 # This function will take a dataframe as input and return a summary of the dataframe
 # Include data types, column names, and a few example values from each column
 # This will be added to the LLM prompts to help the LLM understand the data structure

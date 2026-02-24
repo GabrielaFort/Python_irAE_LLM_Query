@@ -43,6 +43,8 @@ class QueryAgent:
           filtering or lookup-style questions.
         - For counts/comparisons, group logically and use '.nunique()' where appropriate.
         - Ensure all column names are unique to avoid errors.
+        - Include columns in the output that provide context for the answer. The answer must make sense on its own given the question.
+            - **FOR EXAMPLE**, if the question is "What are the top 3 most commonly reported irAEs?" - the output should include columns for BOTH the irAE name and the count, not just the count.
         - **SAFETY**: Never include code that writes to disk or removes files, accesses the network, or executes system commands.
 
         **Output**

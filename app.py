@@ -194,17 +194,23 @@ if "explanation_agent" not in st.session_state:
 explanation_agent = st.session_state["explanation_agent"]
 
 # Setup app layout 
-st.title("irAE Dataset LLM Assistant")
+st.title("irAE.AI")
 
 # Introduction section
 st.markdown("""
-Welcome to the **irAE Dataset LLM Assistant**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
+### AI-powered exploration of real-world immune-related adverse events 
+            
+Welcome to **irAE.AI**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
 
 Use this tool to:
 - Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
 - Generate plots or summaries of irAE patterns  
 - Automatically produce reproducible Python code
+""" )
 
+st.link_button("See a video demo", "https://vimeo.com/1167829596?share=copy&fl=sv&fe=ci")
+        
+st.markdown("""
 ---
 """)
 

@@ -194,11 +194,10 @@ if "explanation_agent" not in st.session_state:
 explanation_agent = st.session_state["explanation_agent"]
 
 # Setup app layout 
-st.title("irAE.AI")
+st.markdown("## **irAE.AI: AI-powered exploration of real-world immune-related adverse events**")
 
 # Introduction section
 st.markdown("""
-### AI-powered exploration of real-world immune-related adverse events 
             
 Welcome to **irAE.AI**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
 
@@ -215,13 +214,13 @@ st.markdown("""
 """)
 
 # Data Overview Section
-st.header("Dataset Overview")
+st.markdown("### Dataset Overview")
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Number of Records", f"{df.shape[0]:,}")
+    st.metric("Number of Records", f"{df.shape[0]:,}", border=True)
 with col2:
-    st.metric("Number of Columns", f"{df.shape[1]}")
+    st.metric("Number of Columns", f"{df.shape[1]}", border=True)
 
 st.caption("Below is a preview of the FAERS irAE dataset:")
 st.dataframe(df.head(10), width='stretch', hide_index=True)
@@ -256,7 +255,7 @@ if st.session_state["pending_question"] is not None:
     st.session_state["pending_question"] = None
 
 ### Query interface ###
-st.header("Ask a Question")
+st.markdown("### Ask a Question")
 
 # Input question box with Enter submission
 with st.form("query_form", clear_on_submit=False, enter_to_submit=True):

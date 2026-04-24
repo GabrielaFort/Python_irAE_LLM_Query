@@ -64,6 +64,15 @@ def benchmark_question_classifier(file_path, model_name, n_runs=5):
         api_key=os.getenv("OLLAMA_API_KEY")
     ))
 
+    # # Local mode
+    # classifier = QuestionClassifier(LLMClient(
+    #     model=model_name,
+    #     api_url="http://localhost:11434",
+    #     temperature = 0,
+    #     api_key=None
+    # ))
+  
+
     # Create output file path/name
     out_path = f"results/benchmark_classifier_{model_name.replace(':', '_')}.xlsx"
 
@@ -130,6 +139,8 @@ if __name__ == "__main__":
                    "minimax-m2:cloud","kimi-k2:1t-cloud","deepseek-v3.2:cloud","glm-4.7:cloud","mistral-large-3:675b-cloud",
                     "minimax-m2.1:cloud","gemini-3-flash-preview:cloud"]
     
+    local_model_list = ["qwen2.5:7b", "gemma3:4b", "mistral:7b"]
+    
     for model in model_list:
         print(f"\n{'='*60}\nBenchmarking model: {model}\n{'='*60}")
 
@@ -137,4 +148,12 @@ if __name__ == "__main__":
                                       model,
                                       n_runs=5)
         print(f"\nCompleted benchmarking for model: {model}\n")
+
+    # for model in local_model_list:
+    #     print(f"\n{'='*60}\nBenchmarking local model: {model}\n{'='*60}")
+
+    #     benchmark_question_classifier("data/question_classifier_benchmark.csv",
+    #                                   model,
+    #                                   n_runs=5)
+    #     print(f"\nCompleted benchmarking for local model: {model}\n")
 

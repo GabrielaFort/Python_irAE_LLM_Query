@@ -388,6 +388,12 @@ def run_agent(question,model,agent,temp):
                     api_url="https://ollama.com",
                     temperature=temp,
                     api_key=os.getenv("OLLAMA_API_KEY"))
+    
+    # # Local mode
+    # myllm = LLMClient(model=model,
+    #                 api_url="http://localhost:11434",
+    #                 temperature=temp,
+    #                 api_key=None)
 
     # Generate summary for df for prompt
     summary = summarize_dataframe(df)
@@ -647,5 +653,12 @@ if __name__ == "__main__":
     for model in models_to_test:
         main(n=5, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
         print(f"Completed {benchmark_set} benchmarking for model: {model}")
+
+    # # Local mode
+    # local_model_list = ["mistral:7b", "qwen2.5:7b"]
+    # benchmark_set = "plot"  # Choose from "query", "stats", "plot"
+    # for model in local_model_list:
+    #     main(n=1, benchmark_path="data/benchmark_questions_111025.xlsx", benchmark=benchmark_set, model_name=model)
+    #     print(f"Completed {benchmark_set} benchmarking for local model: {model}")
 
 

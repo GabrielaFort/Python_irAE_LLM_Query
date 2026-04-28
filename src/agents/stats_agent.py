@@ -34,6 +34,7 @@ class StatsAgent:
         - Each row corresponds to one subject/sample.
         - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, and `scipy.stats (stats)` are already imported.
         - Only use columns and data types shown in the summary. Do **not** assume any others.
+        - You may try searching for common less-specific synonyms of a user query if appropriate (i.e. for tumor_type: lung for lung adenocarcinoma, pancreatic for pancreatic adenocarcinoma, etc)
         - You may create temporary variables, but never modify or overwrite 'df'.
         - **SAFETY**: Never include code that writes to disk or removes files, accesses the network, or executes system commands.
 

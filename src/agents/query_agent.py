@@ -34,6 +34,7 @@ class QueryAgent:
         - Assign the final answer to 'result'.
         - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, and `scipy.stats (stats)` are already imported.
         - Only use columns and data types shown in the summary. Do **not** assume others. 
+        - You may try searching for common less-specific synonyms of a user query if appropriate (i.e. for tumor_type: lung for lung adenocarcinoma, pancreatic for pancreatic adenocarcinoma, etc)
         - You may create temp DataFrames/Series/columns but never modify 'df'.
         - Handle comma-separated values using `str.split(r'\\s*,\\s*', regex=True)` or `explode()`.
         - If exploding multiple columns, pad shorter lists with `None` before exploding.

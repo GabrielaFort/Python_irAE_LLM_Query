@@ -46,6 +46,7 @@ class PlotAgent:
         - In addition, create a pandas DataFrame named `plot_data` that contains the exact data used to construct the plot (one row per point/bar/etc).
         - Do **not** include any import statements — assume `pandas (pd)`, `numpy (np)`, `plotly.express (px)`, `plotly.graph_objects (go)`, `scipy.stats (stats)`, `matplotlib.pyplot (plt)`, `venn2` and `venn3` are already imported.
         - Only use columns and data types shown in the summary. Do **not** assume any others.
+        - You may try searching for common less-specific synonyms of a user query if appropriate (i.e. for tumor_type: lung for lung adenocarcinoma, pancreatic for pancreatic adenocarcinoma, etc)
         - You may create temporary variables, but never modify or overwrite 'df'.
         - When splitting comma-separated values, ALWAYS assign and explode within the SAME DataFrame (e.g., df_copy['col'] = df_copy['col'].str.split(...); df_copy = df_copy.explode('col')). Never create a separate exploded Series and assign it back.
         - All axis update methods must use Plotlys plural API: use update_xaxes(), update_yaxes(). Never use update_xaxis or update_yaxis.

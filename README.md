@@ -7,6 +7,8 @@ An LLM-powered interactive analytics platform for exploring real-world immune-re
 🌐 **Live Application:** https://irae.ai.tanlab.org/  
 💻 **Web App Repository:** https://github.com/GabrielaFort/Python_irAE_LLM_Query  
 
+**Citation:** Fort G, Stone D, Lin CN, Young A, and Tan AC. (2026). irAE.AI: AI powered exploration of real-world immune-related adverse events. JAMIA Open. In Press. 
+
 ---
 
 ## Overview

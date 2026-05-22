@@ -199,7 +199,8 @@ st.markdown("## **irAE.AI: AI-powered exploration of real-world immune-related a
 # Introduction section
 st.markdown("""
             
-Welcome to **irAE.AI**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.
+Welcome to **irAE.AI**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.      
+**Citation:**  Fort G, Stone D, Lin CN, Young A, and Tan AC. (2026). irAE.AI: AI powered exploration of real-world immune-related adverse events. JAMIA Open. In Press.
 
 Use this tool to:
 - Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  

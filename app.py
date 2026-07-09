@@ -200,7 +200,7 @@ st.markdown("## **irAE.AI: AI-powered exploration of real-world immune-related a
 st.markdown("""
             
 Welcome to **irAE.AI**, a natural-language interface to explore immune-related adverse events (irAEs) reported in **FAERS**.      
-**Citation:**  Fort G, Stone D, Lin CN, Young A, and Tan AC. (2026). irAE.AI: AI powered exploration of real-world immune-related adverse events. JAMIA Open. In Press.
+**Citation:**  Fort G, Stone D, Lin CN, Young A, and Tan AC. (2026). irAE.AI: AI powered exploration of real-world immune-related adverse events. JAMIA Open. doi: https://doi.org/10.1093/jamiaopen/ooag094
 
 Use this tool to:
 - Ask questions about specific cancer types, drugs, toxicities, or current irAE guidelines  
@@ -209,6 +209,12 @@ Use this tool to:
 """ )
 
 st.link_button("See a video demo", "https://vimeo.com/1167829596?share=copy&fl=sv&fe=ci")
+
+st.markdown("""
+            
+**Note**: Since the publication of this tool, Ollama Cloud has retired gemini-3-flash-preview and qwen3-coder:480b.
+This workflow now utilizes **glm-5.2** hosted on Ollama Cloud for all analyses, which achieved similar benchmarking accuracy.
+""")
         
 st.markdown("""
 ---

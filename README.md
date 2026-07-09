@@ -4,8 +4,8 @@
 
 An LLM-powered interactive analytics platform for exploring real-world immune-related adverse events from FAERS.
 
-🌐 [**Live Application:**](https://irae.ai.tanlab.org/)  
-💻 [**Web App Repository:**](https://github.com/GabrielaFort/Python_irAE_LLM_Query)  
+🌐 [**Live Application**](https://irae.ai.tanlab.org/)  
+💻 [**Web App Repository**](https://github.com/GabrielaFort/Python_irAE_LLM_Query)  
 
 **Citation:** Fort G, Stone D, Lin CN, Young A, and Tan AC. (2026). irAE.AI: AI powered exploration of real-world immune-related adverse events. JAMIA Open. doi: https://doi.org/10.1093/jamiaopen/ooag094
 
@@ -22,6 +22,7 @@ This project presents an **AI-enabled platform** for interactive exploration of 
 The goal is to lower the technical barrier to complex pharmacovigilance analyses while maintaining transparency, reproducibility, and safety.
 
 **Note**: Since the publication of this tool, Ollama Cloud has retired gemini-3-flash-preview and qwen3-coder:480b. This workflow now utilizes **glm-5.2** hosted on Ollama Cloud for all analyses, which achieved similar benchmarking accuracy.
+
 ---
 
 ## Key Features

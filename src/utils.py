@@ -12,49 +12,49 @@ from pathlib import Path
 
 # Instantiate LLM clients with preset configurations for different tasks. 
 def question_classifier_llm(): 
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                       api_url="https://ollama.com",
                       temperature=0,
                       api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def query_llm():
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def plotter_llm():
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                 api_url="https://ollama.com",
                 temperature=0.5,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def stats_llm():
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
 
 def error_checker_llm():
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                 api_url="https://ollama.com",
                 temperature=0,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm  
 
 def guideline_llm():
-    myllm = LLMClient(model="gpt-oss:120b-cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_GUIDELINE_LLM", "gpt-oss:120b-cloud"),
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
     return myllm
 
 def explanation_llm():
-    myllm = LLMClient(model="glm-5.2:cloud",
+    myllm = LLMClient(model=os.getenv("IRAE_AI_ANALYTICAL_LLM", "glm-5.2:cloud"),
                 api_url="https://ollama.com",
                 temperature=0.1,
                 api_key=os.getenv("OLLAMA_API_KEY"))
